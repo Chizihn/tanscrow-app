@@ -1,0 +1,55 @@
+import { TransactionStatus } from "../types/transaction";
+
+// Mock transactions data
+export const mockTransactions = [
+  {
+    id: "1",
+    title: "Payment for design",
+    description: "UI design for mobile app",
+    status: TransactionStatus.COMPLETED,
+    createdAt: new Date("2024-01-15"),
+    amount: 1000,
+    buyer: { id: "user-123", firstName: "Eme", lastName: "Ka" },
+    seller: { id: "seller-456", firstName: "Dan ", lastName: "El" },
+  },
+  {
+    id: "2",
+    title: "App Development",
+    description: "React Native full app development with backend integration",
+    status: TransactionStatus.PENDING,
+    createdAt: new Date("2024-02-01"),
+    amount: 1000,
+    buyer: { id: "buyer-789", firstName: "Ti", lastName: "na" },
+    seller: { id: "user-123", firstName: "Ju", lastName: "de" },
+  },
+  {
+    id: "3",
+    title: "Consultation Fee",
+    description: "Technical consultation for startup project",
+    status: TransactionStatus.DISPUTED,
+    createdAt: new Date("2024-01-20"),
+    amount: 100,
+    buyer: { id: "user-123", firstName: "Gif", lastName: "te" },
+    seller: { id: "seller-999", firstName: "John ", lastName: "Son" },
+  },
+  {
+    id: "4",
+    title: "Website Redesign",
+    description: "Complete website overhaul with modern design",
+    status: TransactionStatus.IN_PROGRESS,
+    createdAt: new Date("2024-02-10"),
+    amount: 1000,
+    buyer: { id: "buyer-555", firstName: "San", lastName: "Dra" },
+    seller: { id: "user-123", firstName: "Vic ", lastName: "Tor" },
+  },
+  {
+    id: "5",
+    title: "Logo Design",
+    description: "Brand identity and logo creation",
+    status: TransactionStatus.DELIVERED,
+    createdAt: new Date("2024-01-10"),
+    amount: 2000,
+    buyer: { id: "user-123", firstName: "Bob ", lastName: "Wilson" },
+    seller: { id: "seller-777", firstName: "Bob ", lastName: "Wilson" },
+  },
+];
