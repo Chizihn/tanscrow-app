@@ -172,6 +172,11 @@ const TransactionActions: React.FC<TransactionActionsProps> = ({
     openDispute({ variables: { input: data } });
   };
 
+  const handleClose = () => {
+    setError(null);
+    onClose();
+  };
+
   const actionConfig: Record<
     ActionType,
     {
@@ -258,7 +263,7 @@ const TransactionActions: React.FC<TransactionActionsProps> = ({
       visible={Boolean(actionType)}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.container}>
         <View style={styles.header}>

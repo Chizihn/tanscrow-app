@@ -33,109 +33,129 @@ const TransactionInfo: React.FC<TransactionInfoProps> = ({
     }
   };
 
-  const InfoItem = ({
+  const InfoRow = ({
     label,
     value,
     icon,
+    isAmount = false,
   }: {
     label: string;
     value: string;
     icon?: React.ReactNode;
+    isAmount?: boolean;
   }) => (
-    <View style={styles.infoItem}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <View style={styles.infoValueContainer}>
-        {icon && <View>{icon}</View>}
-        <Text style={styles.infoValue}>{value}</Text>
+    <View style={styles.infoRow}>
+      <View style={styles.labelContainer}>
+        {icon && <View style={styles.iconContainer}>{icon}</View>}
+        <Text style={styles.label}>{label}</Text>
       </View>
+      <Text style={[styles.value, isAmount && styles.amountValue]}>
+        {value}
+      </Text>
+    </View>
+  );
+
+  // Component for full-width description
+  const DescriptionBlock = ({ description }: { description: string }) => (
+    <View style={styles.descriptionBlock}>
+      <Text style={styles.descriptionLabel}>Description</Text>
+      <Text style={styles.descriptionText}>{description}</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.cardTitle}>Transaction Details</Text>
+      {/* Transaction Details Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Transaction Details</Text>
 
-      <View style={styles.grid}>
-        <InfoItem label="Description" value={transaction.description} />
-        <InfoItem label="Transaction Type" value={transaction.type} />
-        <InfoItem
-          label="Amount"
-          value={`₦${transaction.amount.toLocaleString()}`}
-        />
-        <InfoItem
-          label="Escrow Fee"
-          value={`₦${transaction.escrowFee.toLocaleString()}`}
-        />
-        <InfoItem
-          label="Total Amount"
-          value={`₦${transaction.totalAmount.toLocaleString()}`}
-        />
+        <View style={styles.infoContainer}>
+          {/* Description gets its own block layout */}
+          <DescriptionBlock description={transaction.description} />
 
-        <View style={styles.infoItem}>
-          <Text style={styles.infoLabel}>Escrow Status</Text>
-          <View
-            style={[
-              styles.badge,
-              {
-                backgroundColor: getEscrowBadgeColor(transaction.escrowStatus),
-              },
-            ]}
-          >
-            <Text style={styles.badgeText}>
-              {transaction.escrowStatus.replace("_", " ")}
-            </Text>
+          {/* Rest of the info in compact rows */}
+          <View style={styles.compactInfoSection}>
+            <InfoRow label="Type" value={transaction.type} />
+            <InfoRow
+              label="Amount"
+              value={`₦${transaction.amount.toLocaleString()}`}
+              isAmount
+            />
+            <InfoRow
+              label="Escrow Fee"
+              value={`₦${transaction.escrowFee.toLocaleString()}`}
+            />
+            <InfoRow
+              label="Total"
+              value={`₦${transaction.totalAmount.toLocaleString()}`}
+              isAmount
+            />
+
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Escrow Status</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: getEscrowBadgeColor(
+                      transaction.escrowStatus
+                    ),
+                  },
+                ]}
+              >
+                <Text style={styles.statusBadgeText}>
+                  {transaction.escrowStatus.replace("_", " ")}
+                </Text>
+              </View>
+            </View>
+
+            <InfoRow
+              label="Created"
+              value={formatDate(new Date(transaction.createdAt))}
+              icon={<Calendar size={14} color="#6b7280" />}
+            />
+
+            <InfoRow
+              label="Expected Delivery"
+              value={
+                transaction.expectedDeliveryDate
+                  ? formatDate(new Date(transaction.expectedDeliveryDate))
+                  : "Not specified"
+              }
+              icon={<Clock size={14} color="#6b7280" />}
+            />
+
+            {transaction.deliveryMethod && (
+              <InfoRow
+                label="Delivery Method"
+                value={transaction.deliveryMethod}
+              />
+            )}
+
+            {transaction.status === TransactionStatus.COMPLETED && (
+              <InfoRow
+                label="Delivered"
+                value={
+                  transaction.actualDeliveryDate
+                    ? formatDate(new Date(transaction.actualDeliveryDate))
+                    : "Not specified"
+                }
+                icon={<Clock size={14} color="#6b7280" />}
+              />
+            )}
+
+            {transaction.trackingInfo && (
+              <InfoRow label="Tracking" value={transaction.trackingInfo} />
+            )}
           </View>
         </View>
-
-        <InfoItem
-          label="Created Date"
-          value={formatDate(new Date(transaction.createdAt))}
-          icon={<Calendar size={16} color="#6b7280" />}
-        />
-
-        <InfoItem
-          label="Expected Delivery"
-          value={
-            transaction.expectedDeliveryDate
-              ? formatDate(new Date(transaction.expectedDeliveryDate))
-              : "Not specified"
-          }
-          icon={<Clock size={16} color="#6b7280" />}
-        />
-
-        {transaction.deliveryMethod && (
-          <InfoItem
-            label="Delivery Method"
-            value={transaction.deliveryMethod}
-          />
-        )}
-
-        {transaction.status === TransactionStatus.COMPLETED && (
-          <InfoItem
-            label="Actual Delivery Date"
-            value={
-              transaction.actualDeliveryDate
-                ? formatDate(new Date(transaction.actualDeliveryDate))
-                : "Not specified"
-            }
-            icon="clock"
-          />
-        )}
-
-        {transaction.trackingInfo && (
-          <InfoItem
-            label="Tracking Information"
-            value={transaction.trackingInfo}
-          />
-        )}
       </View>
 
-      <View style={styles.separator} />
+      {/* Parties Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Parties</Text>
 
-      <View style={styles.partiesSection}>
-        <Text style={styles.sectionTitle}>Parties Involved</Text>
-
-        <View style={styles.partiesGrid}>
+        <View style={styles.partiesContainer}>
           <View style={styles.partyCard}>
             <Image
               source={{
@@ -144,7 +164,9 @@ const TransactionInfo: React.FC<TransactionInfoProps> = ({
               style={styles.avatar}
             />
             <View style={styles.partyInfo}>
-              <Text style={styles.partyRole}>Buyer {isBuyer && "(You)"}</Text>
+              <View style={styles.partyHeader}>
+                <Text style={styles.partyRole}>Buyer {isBuyer && "• You"}</Text>
+              </View>
               <Text style={styles.partyName}>
                 {transaction.buyer.firstName} {transaction.buyer.lastName}
               </Text>
@@ -160,7 +182,11 @@ const TransactionInfo: React.FC<TransactionInfoProps> = ({
               style={styles.avatar}
             />
             <View style={styles.partyInfo}>
-              <Text style={styles.partyRole}>Seller {!isBuyer && "(You)"}</Text>
+              <View style={styles.partyHeader}>
+                <Text style={styles.partyRole}>
+                  Seller {!isBuyer && "• You"}
+                </Text>
+              </View>
               <Text style={styles.partyName}>
                 {transaction.seller.firstName} {transaction.seller.lastName}
               </Text>
@@ -176,96 +202,128 @@ const TransactionInfo: React.FC<TransactionInfoProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
-    padding: 16,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    gap: 16,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+  section: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
     color: "#111827",
+    marginBottom: 12,
   },
-  grid: {
+  infoContainer: {
     gap: 16,
   },
-  infoItem: {
-    gap: 4,
+
+  // New description block styles
+  descriptionBlock: {
+    backgroundColor: "#f9fafb",
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#3b82f6",
   },
-  infoLabel: {
+  descriptionLabel: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#6b7280",
     textTransform: "uppercase",
+    marginBottom: 4,
   },
-  infoValueContainer: {
+  descriptionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#111827",
+    fontWeight: "400",
+  },
+
+  // Compact section for other info
+  compactInfoSection: {
+    gap: 12,
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    minHeight: 20,
+  },
+  labelContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    flex: 1,
   },
-  infoValue: {
-    fontSize: 14,
+  iconContainer: {
+    marginRight: 6,
+  },
+  label: {
+    fontSize: 13,
+    color: "#6b7280",
+    fontWeight: "500",
+  },
+  value: {
+    fontSize: 13,
     color: "#111827",
+    fontWeight: "500",
+    textAlign: "right",
+    flex: 1,
+    marginLeft: 12,
   },
-  badge: {
+  amountValue: {
+    fontWeight: "700",
+    color: "#059669",
+    fontSize: 14,
+  },
+  statusBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: "flex-start",
+    paddingVertical: 3,
+    borderRadius: 10,
   },
-  badgeText: {
-    fontSize: 12,
+  statusBadgeText: {
+    fontSize: 10,
     fontWeight: "600",
     color: "white",
     textTransform: "uppercase",
   },
-  separator: {
-    height: 1,
-    backgroundColor: "#e5e7eb",
-  },
-  partiesSection: {
-    gap: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#111827",
-  },
-  partiesGrid: {
-    gap: 12,
+  partiesContainer: {
+    gap: 10,
   },
   partyCard: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    padding: 12,
+    backgroundColor: "#f9fafb",
+    borderRadius: 10,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   partyInfo: {
     flex: 1,
-    gap: 2,
+  },
+  partyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
   },
   partyRole: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#6b7280",
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#3b82f6",
     textTransform: "uppercase",
   },
   partyName: {
     fontSize: 14,
     fontWeight: "600",
     color: "#111827",
+    marginBottom: 1,
   },
   partyEmail: {
     fontSize: 12,

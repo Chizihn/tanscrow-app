@@ -7,7 +7,7 @@ import TransactionSkeletonLoader from "@/components/transaction/TransactionSkele
 import TransactionListItem from "@/components/TransactionListItem";
 import { useQuery } from "@apollo/client";
 import { Link } from "expo-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   FlatList,
   Modal,
@@ -21,7 +21,6 @@ import {
 } from "react-native";
 
 type TabType = "all" | "buyer" | "seller";
-type StatusFilterType = "all" | "active" | "completed" | "disputed";
 
 const statusOptions = [
   { label: "All Status", value: "all" },
@@ -33,7 +32,7 @@ const statusOptions = [
 export default function TransactionScreen() {
   const user = useAuthStore((state) => state.user) || {};
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -44,22 +43,23 @@ export default function TransactionScreen() {
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
     notifyOnNetworkStatusChange: true,
-    onCompleted: (data) => {
-      console.log("transactions", data.transactions);
-    },
   });
 
   const transactions: Transaction[] = data?.transactions ?? [];
 
-  // Filter transactions based on role, status, and search query
-  const filteredTransactions = useMemo(() => {
+  // Filter transactions based on role and status (matching Next.js logic exactly)
+  const getFilteredTransactions = (role: string) => {
     let filtered = transactions;
 
     // Filter by role
-    if (activeTab === "buyer") {
-      filtered = filtered.filter((t) => t.buyer?.id === user.id);
-    } else if (activeTab === "seller") {
-      filtered = filtered.filter((t) => t.seller?.id === user.id);
+    if (role === "buyer") {
+      filtered = transactions.filter(
+        (t) => t.buyer?.id === (user?.id as string)
+      );
+    } else if (role === "seller") {
+      filtered = transactions.filter(
+        (t) => t.seller?.id === (user?.id as string)
+      );
     }
 
     // Filter by status
@@ -92,8 +92,7 @@ export default function TransactionScreen() {
     }
 
     return filtered;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, statusFilter, searchQuery]);
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -106,11 +105,11 @@ export default function TransactionScreen() {
     }
   };
 
-  const getEmptyMessage = () => {
-    if (activeTab === "buyer") {
+  const getEmptyMessage = (role: string) => {
+    if (role === "buyer") {
       return "No transactions found where you are the buyer";
     }
-    if (activeTab === "seller") {
+    if (role === "seller") {
       return "No transactions found where you are the seller";
     }
     if (statusFilter === "active") {
@@ -130,7 +129,7 @@ export default function TransactionScreen() {
     return option?.label || "All Status";
   };
 
-  const handleStatusSelect = (value: StatusFilterType) => {
+  const handleStatusSelect = (value: string) => {
     setStatusFilter(value);
     setShowStatusModal(false);
   };
@@ -148,6 +147,7 @@ export default function TransactionScreen() {
       style={[styles.tabButton, isActive && styles.activeTabButton]}
       onPress={() => setActiveTab(tab)}
       activeOpacity={0.7}
+      disabled={loading}
     >
       <Text
         style={[styles.tabButtonText, isActive && styles.activeTabButtonText]}
@@ -157,11 +157,42 @@ export default function TransactionScreen() {
     </TouchableOpacity>
   );
 
-  const EmptyState = () => (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyStateText}>{getEmptyMessage()}</Text>
-    </View>
-  );
+  // Render transaction list for each tab (matching Next.js structure)
+  const renderTransactionList = (role: string) => {
+    const filteredTransactions = getFilteredTransactions(role);
+
+    if (loading) {
+      return <TransactionSkeletonLoader />;
+    }
+
+    if (filteredTransactions.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>{getEmptyMessage(role)}</Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={filteredTransactions}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TransactionListItem transaction={item} userId={user?.id as string} />
+        )}
+        contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3c3f6a"]}
+            tintColor="#3c3f6a"
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
 
   const StatusModal = () => (
     <Modal
@@ -184,9 +215,7 @@ export default function TransactionScreen() {
                 styles.modalOption,
                 statusFilter === option.value && styles.selectedOption,
               ]}
-              onPress={() =>
-                handleStatusSelect(option.value as StatusFilterType)
-              }
+              onPress={() => handleStatusSelect(option.value as string)}
             >
               <Text
                 style={[
@@ -206,7 +235,7 @@ export default function TransactionScreen() {
     </Modal>
   );
 
-  if (error)
+  if (error) {
     return (
       <ErrorState
         message={error.message}
@@ -214,6 +243,7 @@ export default function TransactionScreen() {
         onRetry={() => refetch()}
       />
     );
+  }
 
   return (
     <View style={styles.container}>
@@ -232,6 +262,7 @@ export default function TransactionScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholderTextColor="#999"
+              // disabled={loading}
             />
           </View>
 
@@ -272,32 +303,12 @@ export default function TransactionScreen() {
         </ScrollView>
       </View>
 
-      {/* Transaction List */}
-      {loading ? (
-        <TransactionSkeletonLoader />
-      ) : (
-        <FlatList
-          data={filteredTransactions}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TransactionListItem
-              transaction={item}
-              userId={user?.id as string}
-            />
-          )}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={EmptyState}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={["#3c3f6a"]}
-              tintColor="#3c3f6a"
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      {/* Transaction Content based on active tab */}
+      <View style={styles.contentContainer}>
+        {activeTab === "all" && renderTransactionList("all")}
+        {activeTab === "buyer" && renderTransactionList("buyer")}
+        {activeTab === "seller" && renderTransactionList("seller")}
+      </View>
 
       {/* Create Transaction Button */}
       <Link href="/transactions/create" asChild>
@@ -461,6 +472,11 @@ const styles = StyleSheet.create({
     color: "#3c3f6a",
     fontWeight: "600",
   },
+
+  contentContainer: {
+    flex: 1,
+  },
+
   listContainer: {
     paddingVertical: 8,
     flexGrow: 1,

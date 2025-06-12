@@ -10,7 +10,7 @@ import {
   TransactionType,
 } from "@/assets/types/transaction";
 import { SearchUserType, User } from "@/assets/types/user";
-import ScreenHeader from "@/components/ScreenHeader";
+import { ScreenRouter } from "@/components/ScreenRouter";
 import toastConfig from "@/components/ToastConfig";
 import ConfirmationStep from "@/components/transaction/create/ConfirmationStep";
 import CounterpartyStep from "@/components/transaction/create/CounterPartyStep";
@@ -152,15 +152,11 @@ const CreateTransactionScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader
-        title="Create Transaction"
-        description="Set up a new escrow transaction in a few steps"
-      />
-      {/* <Header
+      <ScreenRouter
         title="Create Transaction"
         subtitle="Set up a new escrow transaction in a few steps"
-        onBack={() => navigation.goBack()}
-      /> */}
+        onBack={() => router.back()}
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}

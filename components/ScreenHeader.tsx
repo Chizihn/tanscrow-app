@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface PageHeaderProps {
   title: string;
@@ -8,10 +9,12 @@ interface PageHeaderProps {
 
 export default function ScreenHeader({ title, description }: PageHeaderProps) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
-    </View>
+    <SafeAreaView>
+      <View style={styles.container}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.description}>{description}</Text>
+      </View>
+    </SafeAreaView>
   );
 }
 

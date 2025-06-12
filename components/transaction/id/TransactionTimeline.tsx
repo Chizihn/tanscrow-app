@@ -9,31 +9,31 @@ interface TransactionTimelineProps {
 
 const TransactionTimeline: React.FC<TransactionTimelineProps> = ({ logs }) => {
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Transaction Timeline</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Timeline</Text>
       </View>
 
       <ScrollView
-        style={styles.cardContent}
+        style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.timelineContainer}>
           {logs.map((log, index) => (
             <View key={log.id} style={styles.timelineItem}>
-              {/* Timeline line - only show if not the last item */}
-              {index < logs.length - 1 && <View style={styles.timelineLine} />}
+              {/* Timeline connector */}
+              {index < logs.length - 1 && <View style={styles.connector} />}
 
               {/* Timeline dot */}
-              <View style={styles.timelineDot} />
+              <View style={styles.dot} />
 
-              {/* Content */}
-              <View style={styles.timelineContent}>
-                <Text style={styles.actionText}>
+              {/* Timeline content */}
+              <View style={styles.content}>
+                <Text style={styles.action}>
                   {log.action.replace(/_/g, " ")}
                 </Text>
-                <Text style={styles.descriptionText}>{log.description}</Text>
-                <Text style={styles.dateText}>
+                <Text style={styles.description}>{log.description}</Text>
+                <Text style={styles.timestamp}>
                   {formatDate(log.createdAt) || "N/A"}
                 </Text>
               </View>
@@ -46,79 +46,78 @@ const TransactionTimeline: React.FC<TransactionTimelineProps> = ({ logs }) => {
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    marginVertical: 8,
+  container: {
+    backgroundColor: "white",
+    flex: 1,
   },
-  cardHeader: {
-    padding: 16,
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#f3f4f6",
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
     color: "#111827",
   },
-  cardContent: {
-    padding: 16,
-    maxHeight: 400, // Limit height to make it scrollable if needed
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
   timelineContainer: {
-    position: "relative",
+    paddingVertical: 20,
   },
   timelineItem: {
     position: "relative",
-    paddingLeft: 24,
-    paddingBottom: 16,
+    paddingLeft: 32,
+    paddingBottom: 20,
     minHeight: 60,
   },
-  timelineLine: {
+  connector: {
     position: "absolute",
-    left: 7.5,
-    top: 16,
+    left: 11,
+    top: 20,
     bottom: 0,
-    width: 1,
-    backgroundColor: "rgba(107, 114, 128, 0.2)", // muted-foreground/20
+    width: 2,
+    backgroundColor: "#e5e7eb",
   },
-  timelineDot: {
+  dot: {
     position: "absolute",
     left: 0,
     top: 8,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#3B82F6", // primary color
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#3b82f6",
+    borderWidth: 4,
+    borderColor: "white",
+    shadowColor: "#3b82f6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  timelineContent: {
-    flex: 1,
+  content: {
     paddingTop: 2,
   },
-  actionText: {
-    fontSize: 16,
-    fontWeight: "500",
+  action: {
+    fontSize: 15,
+    fontWeight: "600",
     color: "#111827",
     marginBottom: 4,
     textTransform: "capitalize",
   },
-  descriptionText: {
+  description: {
     fontSize: 14,
-    color: "#6B7280", // muted-foreground
-    marginBottom: 4,
+    color: "#6b7280",
     lineHeight: 20,
+    marginBottom: 4,
   },
-  dateText: {
+  timestamp: {
     fontSize: 12,
-    color: "#9CA3AF", // muted-foreground lighter
+    color: "#9ca3af",
+    fontWeight: "500",
   },
 });
 

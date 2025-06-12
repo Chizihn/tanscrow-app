@@ -1,6 +1,5 @@
 // components/TransactionListItem.tsx
 import { TransactionStatus } from "@/assets/types/transaction";
-import { formatDate } from "@/assets/utils";
 import { Link } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -65,7 +64,7 @@ const TransactionListItem: React.FC<Props> = ({ transaction, userId }) => {
         {transaction.description || "No description provided"}
       </Text>
 
-      <Text>Created: {formatDate(transaction.createdAt as Date)}</Text>
+      {/* <Text>Created: {formatDate(transaction.createdAt as Date)}</Text> */}
 
       {/* Role and Other Party Info */}
       {/* <View style={styles.roleContainer}>

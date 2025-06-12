@@ -8,12 +8,15 @@ import { useEffect } from "react";
 export function useNavigationGuard() {
   const { isOnboarded } = useAppStore();
   const { isAuthenticated, loading, isInitialized } = useAuthStore();
+  const appStoreHydrated = useAppStore.persist.hasHydrated();
+  const authStoreHydrated = useAuthStore.persist.hasHydrated();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Don't navigate until auth is initialized
-    if (!isInitialized || loading) return;
+    // Don't navigate until both stores are hydrated and auth is initialized
+    if (!appStoreHydrated || !authStoreHydrated || !isInitialized || loading)
+      return;
 
     // Define protected and auth routes
     const isAuthRoute = pathname === "/auth";
@@ -31,5 +34,14 @@ export function useNavigationGuard() {
       // Authenticated but on auth or onboarding page, redirect to dashboard
       router.replace("/(dashboard)");
     }
-  }, [isAuthenticated, isInitialized, isOnboarded, loading, pathname, router]);
+  }, [
+    isAuthenticated,
+    isInitialized,
+    isOnboarded,
+    loading,
+    pathname,
+    router,
+    appStoreHydrated,
+    authStoreHydrated,
+  ]);
 }

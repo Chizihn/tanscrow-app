@@ -28,7 +28,7 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
   const getStatusColor = (status: TransactionStatus) => {
     switch (status) {
       case "PENDING":
-        return "#6b7280";
+        return "#f59e0b";
       case "IN_PROGRESS":
         return "#3b82f6";
       case "COMPLETED":
@@ -68,20 +68,18 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
               style={[styles.primaryButton]}
               onPress={() => setActiveAction("CONFIRM_DELIVERY")}
             >
-              <CheckCircle className="mr-2 h-4 w-4" />
-
+              <CheckCircle size={16} color="white" />
               <Text style={styles.primaryButtonText}>Confirm Delivery</Text>
             </TouchableOpacity>
           );
           buttons.push(
             <TouchableOpacity
               key="cancel"
-              style={[styles.outlineButton]}
+              style={[styles.secondaryButton]}
               onPress={() => setActiveAction("CANCEL")}
             >
-              <XCircle className="mr-2 h-4 w-4" />
-
-              <Text style={styles.outlineButtonText}>Cancel</Text>
+              <XCircle size={16} color="#6b7280" />
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
             </TouchableOpacity>
           );
           break;
@@ -89,24 +87,22 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
           buttons.push(
             <TouchableOpacity
               key="payment-sent"
-              style={[styles.primaryButton]}
+              style={[styles.disabledButton]}
               disabled
             >
-              <CheckCircle className="mr-2 h-4 w-4" />
-
-              <Text style={styles.primaryButtonText}>Payment Sent</Text>
+              <CheckCircle size={16} color="#9ca3af" />
+              <Text style={styles.disabledButtonText}>Payment Sent</Text>
             </TouchableOpacity>
           );
           if (transaction.escrowStatus === "FUNDED") {
             buttons.push(
               <TouchableOpacity
                 key="request-refund"
-                style={[styles.outlineButton]}
+                style={[styles.secondaryButton]}
                 onPress={() => setActiveAction("REQUEST_REFUND")}
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
-
-                <Text style={styles.outlineButtonText}>Request Refund</Text>
+                <RefreshCw size={16} color="#6b7280" />
+                <Text style={styles.secondaryButtonText}>Request Refund</Text>
               </TouchableOpacity>
             );
           }
@@ -124,19 +120,18 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
               style={[styles.primaryButton]}
               onPress={() => setActiveAction("UPDATE_DELIVERY")}
             >
-              <Truck className="mr-2 h-4 w-4" />
-
+              <Truck size={16} color="white" />
               <Text style={styles.primaryButtonText}>Update Delivery</Text>
             </TouchableOpacity>
           );
           buttons.push(
             <TouchableOpacity
               key="cancel"
-              style={[styles.outlineButton]}
+              style={[styles.secondaryButton]}
               onPress={() => setActiveAction("CANCEL")}
             >
-              <XCircle className="mr-2 h-4 w-4" />
-              <Text style={styles.outlineButtonText}>Cancel</Text>
+              <XCircle size={16} color="#6b7280" />
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
             </TouchableOpacity>
           );
           break;
@@ -153,13 +148,12 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
       buttons.push(
         <TouchableOpacity
           key="dispute"
-          style={[styles.destructiveButton]}
+          style={[styles.dangerButton]}
           onPress={() => setActiveAction("DISPUTE")}
           disabled={transaction.status === TransactionStatus.DISPUTED}
         >
-          <AlertCircle className="mr-2 h-4 w-4" />
-
-          <Text style={styles.destructiveButtonText}>Raise Dispute</Text>
+          <AlertCircle size={16} color="white" />
+          <Text style={styles.dangerButtonText}>Raise Dispute</Text>
         </TouchableOpacity>
       );
     }
@@ -169,26 +163,32 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerInfo}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>{transaction.title}</Text>
-          <View
-            style={[
-              styles.badge,
-              { backgroundColor: getStatusColor(transaction.status) },
-            ]}
-          >
-            <Text style={styles.badgeText}>
-              {transaction.status.replace("_", " ")}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.subtitle}>
-          Transaction Code: {transaction.transactionCode}
+      {/* Status Badge */}
+      <View
+        style={[
+          styles.statusBadge,
+          { backgroundColor: getStatusColor(transaction.status) },
+        ]}
+      >
+        <Text style={styles.statusText}>
+          {transaction.status.replace("_", " ")}
         </Text>
       </View>
 
-      <View style={styles.actionsContainer}>{getActionButtons()}</View>
+      {/* Transaction Info */}
+      <View style={styles.headerContent}>
+        <Text style={styles.title} numberOfLines={2}>
+          {transaction.title}
+        </Text>
+        <Text style={styles.transactionCode}>
+          {transaction.transactionCode}
+        </Text>
+      </View>
+
+      {/* Action Buttons */}
+      {getActionButtons().length > 0 && (
+        <View style={styles.actionsContainer}>{getActionButtons()}</View>
+      )}
     </View>
   );
 };
@@ -196,89 +196,108 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
-    padding: 16,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    gap: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
   },
-  headerInfo: {
-    gap: 8,
+  statusBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 12,
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flexWrap: "wrap",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
+  statusText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "white",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  subtitle: {
+  headerContent: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+    lineHeight: 26,
+  },
+  transactionCode: {
     fontSize: 14,
     color: "#6b7280",
+    fontWeight: "500",
   },
   actionsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 10,
   },
   primaryButton: {
     backgroundColor: "#3b82f6",
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    minWidth: 120,
+    justifyContent: "center",
   },
   primaryButtonText: {
     color: "white",
     fontSize: 14,
     fontWeight: "600",
   },
-  outlineButton: {
+  secondaryButton: {
+    backgroundColor: "#f9fafb",
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: "#e5e7eb",
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    minWidth: 120,
+    justifyContent: "center",
   },
-  outlineButtonText: {
-    color: "#374151",
+  secondaryButtonText: {
+    color: "#6b7280",
     fontSize: 14,
     fontWeight: "600",
   },
-  destructiveButton: {
+  dangerButton: {
     backgroundColor: "#ef4444",
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    minWidth: 120,
+    justifyContent: "center",
   },
-  destructiveButtonText: {
+  dangerButtonText: {
     color: "white",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  disabledButton: {
+    backgroundColor: "#f3f4f6",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 120,
+    justifyContent: "center",
+  },
+  disabledButtonText: {
+    color: "#9ca3af",
     fontSize: 14,
     fontWeight: "600",
   },

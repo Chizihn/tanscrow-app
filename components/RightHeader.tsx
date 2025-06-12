@@ -1,4 +1,5 @@
-import { FontAwesome } from "@expo/vector-icons";
+import { Link } from "expo-router";
+import { Bell } from "lucide-react-native";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -13,18 +14,17 @@ const RightHeader = () => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => {}} style={styles.iconButton}>
-        <View style={styles.notificationContainer}>
-          <FontAwesome
-            name="bell"
-            size={ICON_SIZE}
-            color="#fff" // Makes the bell icon white
-          />
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{badgeNumber}</Text>
+      <Link href="/notification" asChild>
+        <TouchableOpacity onPress={() => {}} style={styles.iconButton}>
+          <View style={styles.notificationContainer}>
+            <Bell size={ICON_SIZE} color="#fff" />
+
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{badgeNumber}</Text>
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </Link>
 
       <TouchableOpacity onPress={() => {}} style={styles.avatarButton}>
         {avatarUrl ? (

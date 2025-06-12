@@ -1,36 +1,37 @@
 import HeaderGreeting from "@/components/HeaderGreeting";
 import RightHeader from "@/components/RightHeader";
-import { useNavigationGuard } from "@/hooks/useNavigationGuard";
-import { FontAwesome } from "@expo/vector-icons";
+
 import { Tabs, usePathname } from "expo-router";
+import {
+  AlertTriangle,
+  LayoutDashboard,
+  Repeat,
+  Settings,
+  Wallet as WalletIcon,
+} from "lucide-react-native";
 import { Platform, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TabBarIcon = ({
-  name,
+  Icon,
   color,
   focused,
 }: {
-  name: React.ComponentProps<typeof FontAwesome>["name"];
+  Icon: React.ElementType;
   color: string;
   focused: boolean;
 }) => (
-  <FontAwesome
-    name={name}
+  <Icon
     size={focused ? 24 : 20}
-    style={[
-      styles.icon,
-      {
-        color: focused ? "#3c3f6a" : color,
-        transform: [{ scale: focused ? 1.1 : 1 }],
-        opacity: focused ? 1 : 0.65,
-      },
-    ]}
+    color={focused ? "#3c3f6a" : color}
+    style={{
+      transform: [{ scale: focused ? 1.1 : 1 }],
+      opacity: focused ? 1 : 0.65,
+    }}
   />
 );
 
 export default function DashboardLayout() {
-  useNavigationGuard();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
 
@@ -45,21 +46,16 @@ export default function DashboardLayout() {
     ({ base, except }) => pathname?.startsWith(base) && pathname !== except
   );
 
-  // Dynamic screen options to hide/show header based on hideTabBar
   const getScreenOptions = (hideHeader: boolean) => ({
-    headerShown: !hideHeader,
+    headerShown: false,
     headerTitle: "",
-    headerLeft: !hideHeader
-      ? () => <HeaderGreeting userName="Chizi" />
-      : undefined,
-    headerRight: !hideHeader ? () => <RightHeader /> : undefined,
   });
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "#3c3f6a",
-        tabBarInactiveTintColor: "#B0B3B8",
+        tabBarInactiveTintColor: "#6E6E73",
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarItemStyle: styles.tabBarItem,
         tabBarStyle: {
@@ -72,10 +68,19 @@ export default function DashboardLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          ...getScreenOptions(hideTabBar),
           title: "Overview",
+          headerShown: !hideTabBar,
+          headerTitle: "",
+          headerLeft: !hideTabBar
+            ? () => <HeaderGreeting userName="Chizi" />
+            : undefined,
+          headerRight: !hideTabBar ? () => <RightHeader /> : undefined,
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="th-large" color={color} focused={focused} />
+            <TabBarIcon
+              Icon={LayoutDashboard}
+              color={color}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -85,7 +90,7 @@ export default function DashboardLayout() {
           ...getScreenOptions(hideTabBar),
           title: "Transactions",
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="exchange" color={color} focused={focused} />
+            <TabBarIcon Icon={Repeat} color={color} focused={focused} />
           ),
         }}
       />
@@ -95,11 +100,7 @@ export default function DashboardLayout() {
           ...getScreenOptions(hideTabBar),
           title: "Disputes",
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              name="exclamation-circle"
-              color={color}
-              focused={focused}
-            />
+            <TabBarIcon Icon={AlertTriangle} color={color} focused={focused} />
           ),
         }}
       />
@@ -109,7 +110,7 @@ export default function DashboardLayout() {
           ...getScreenOptions(hideTabBar),
           title: "Wallet",
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="credit-card" color={color} focused={focused} />
+            <TabBarIcon Icon={WalletIcon} color={color} focused={focused} />
           ),
         }}
       />
@@ -119,7 +120,7 @@ export default function DashboardLayout() {
           ...getScreenOptions(hideTabBar),
           title: "Settings",
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="cog" color={color} focused={focused} />
+            <TabBarIcon Icon={Settings} color={color} focused={focused} />
           ),
         }}
       />
@@ -131,9 +132,7 @@ const styles = StyleSheet.create({
   safeArea: {
     // flex: 1,
   },
-  icon: {
-    transitionDuration: "150ms",
-  },
+
   tabBar: {
     backgroundColor: "#FFFFFF",
     borderTopWidth: 0,
@@ -143,6 +142,7 @@ const styles = StyleSheet.create({
   },
   tabBarLabel: {
     fontSize: 11,
+    color: "#B0B3B8",
     fontWeight: "600",
     marginTop: 4,
   },

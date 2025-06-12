@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   viewAllButton: {
-    color: "#007AFF",
+    color: "#3C3F6A",
     fontSize: 14,
     fontWeight: "500",
   },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryCard: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#3C3F6A",
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,

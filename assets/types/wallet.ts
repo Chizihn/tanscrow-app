@@ -51,6 +51,7 @@ export interface FundWalletInput {
   amount: number;
   currency: PaymentCurrency;
   paymentGateway: PaymentGateway;
+  platform: string;
 }
 
 export interface Banks {

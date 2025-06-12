@@ -3,15 +3,16 @@ import { useAuthStore } from "@/assets/store/authStore";
 import { Transaction } from "@/assets/types/transaction";
 import { User } from "@/assets/types/user";
 import { ErrorState, LoadingState } from "@/components/AppState";
+import { ScreenRouter } from "@/components/ScreenRouter";
 import TransactionActions from "@/components/transaction/id/TransactionActions";
 import TransactionHeader from "@/components/transaction/id/TransactionHeader";
 import TransactionInfo from "@/components/transaction/id/TransactionInfo";
 import TransactionTabs from "@/components/transaction/id/TransactionTabs";
 import TransactionTimeline from "@/components/transaction/id/TransactionTimeline";
 import { useQuery } from "@apollo/client";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
 
 export type ActionType =
   | "PAYMENT"
@@ -21,7 +22,21 @@ export type ActionType =
   | "UPDATE_DELIVERY"
   | "DISPUTE";
 
+const { width: screenWidth } = Dimensions.get("window");
+
+// Mobile-optimized spacing constants
+const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  // Responsive horizontal padding based on screen width
+  horizontal: screenWidth < 375 ? 12 : 16,
+};
+
 export default function TransactionDetailScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const user = useAuthStore((state) => state.user) as User;
@@ -31,55 +46,110 @@ export default function TransactionDetailScreen() {
     transaction: Transaction;
   }>(GET_TRANSACTION, {
     variables: { transactionId: id },
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
     notifyOnNetworkStatusChange: true,
     skip: !id,
     onCompleted: (data) => {
       if (data.transaction) {
-        console.log("transaction", data.transaction);
+        // Transaction loaded successfully
+      } else {
+        console.log("No transaction in response");
       }
+    },
+    onError: (error) => {
+      console.error("GraphQL Query Error:", error);
     },
   });
 
   const transaction = data?.transaction;
+
+  const handleCloseModal = () => {
+    setActiveAction(null);
+  };
 
   if (loading) {
     return <LoadingState message="Loading transaction details..." />;
   }
 
   if (error) {
-    return <ErrorState message={error.message} onRetry={() => refetch()} />;
+    console.error("Error details:", error);
+    return (
+      <ErrorState
+        message={`Error: ${error.message}`}
+        onRetry={() => {
+          refetch();
+        }}
+      />
+    );
+  }
+
+  if (!data) {
+    console.log("No data returned from query");
+    return (
+      <ErrorState
+        message="No data returned from server"
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   if (!transaction) {
-    return <ErrorState message="Transaction not found" />;
+    console.log("Transaction not found in data:", data);
+    return (
+      <ErrorState message="Transaction not found" onRetry={() => refetch()} />
+    );
+  }
+
+  if (!transaction.buyer || !user) {
+    console.log("Missing buyer or user data");
+    return (
+      <ErrorState
+        message="Invalid transaction or user data"
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   const isBuyer = transaction.buyer.id === user.id;
 
+  console.log("Rendering transaction details for:", transaction.id);
+
   return (
-    <View>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
+    <View style={styles.container}>
+      <ScreenRouter title="Transaction" onBack={() => router.back()} />
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header with minimal top spacing */}
+        <View style={styles.headerSection}>
           <TransactionHeader
             transaction={transaction}
             user={user}
             setActiveAction={setActiveAction}
           />
+        </View>
 
-          <View style={styles.mainContent}>
-            <TransactionInfo transaction={transaction} isBuyer={isBuyer} />
-            <TransactionTimeline logs={transaction.logs} />
-          </View>
+        {/* Main content with optimized spacing */}
+        <View style={styles.mainSection}>
+          <TransactionInfo transaction={transaction} isBuyer={isBuyer} />
+          <TransactionTimeline logs={transaction.logs || []} />
+        </View>
 
+        {/* Tabs with proper spacing */}
+        <View style={styles.tabsSection}>
           <TransactionTabs transaction={transaction} />
         </View>
       </ScrollView>
-      {/* TransactionActions Modal */}
+
+      {/* Modal with proper overlay */}
       <TransactionActions
         transaction={transaction}
         actionType={activeAction}
-        onClose={() => setActiveAction(null)}
+        onClose={handleCloseModal}
         onComplete={() => {
           refetch();
           setActiveAction(null);
@@ -92,13 +162,26 @@ export default function TransactionDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#fff",
   },
-  content: {
-    padding: 16,
-    gap: 24,
+  scrollView: {
+    flex: 1,
   },
-  mainContent: {
-    gap: 16,
+  scrollContent: {
+    flexGrow: 1,
+  },
+  headerSection: {
+    paddingHorizontal: spacing.horizontal,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  mainSection: {
+    paddingHorizontal: spacing.horizontal,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  tabsSection: {
+    paddingHorizontal: spacing.horizontal,
+    paddingBottom: spacing.xl,
   },
 });
