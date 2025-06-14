@@ -124,6 +124,15 @@ export const FORGOT_PASSWORD = gql`
   }
 `;
 
+export const VERIFY_RESET_TOKEN = gql`
+  mutation VerifyResetToken($input: VerifyResetTokenInput!) {
+    verifyResetToken(input: $input) {
+      isValid
+      userId
+    }
+  }
+`;
+
 export const RESET_PASSWORD = gql`
   mutation ResetPassword($input: ResetPasswordInput!) {
     resetPassword(input: $input)

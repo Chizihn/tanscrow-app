@@ -1,9 +1,7 @@
-"use client";
-
 import { useAppStore } from "@/assets/store/appStore";
 import { useAuthStore } from "@/assets/store/authStore";
 import { usePathname, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function useNavigationGuard() {
   const { isOnboarded } = useAppStore();
@@ -13,27 +11,59 @@ export function useNavigationGuard() {
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    // Don't navigate until both stores are hydrated and auth is initialized
-    if (!appStoreHydrated || !authStoreHydrated || !isInitialized || loading)
-      return;
+  // Track if we've completed initial navigation
+  const [hasNavigated, setHasNavigated] = useState(false);
+  const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
-    // Define protected and auth routes
+  const isReady =
+    appStoreHydrated && authStoreHydrated && isInitialized && !loading;
+
+  useEffect(() => {
+    // Clear any existing timeout
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+
+    if (!isReady) {
+      return;
+    }
+
+    // Define route types
     const isAuthRoute = pathname === "/auth";
     const isOnboardingRoute = pathname === "/onboarding";
-    // const isDashboardRoute = pathname.startsWith("/(dashboard)")
 
-    // Navigation logic
-    if (!isOnboarded && !isOnboardingRoute) {
-      // Not onboarded, redirect to onboarding
-      router.replace("/onboarding");
-    } else if (isOnboarded && !isAuthenticated && !isAuthRoute) {
-      // Onboarded but not authenticated, redirect to auth
-      router.replace("/auth");
-    } else if (isAuthenticated && (isAuthRoute || isOnboardingRoute)) {
-      // Authenticated but on auth or onboarding page, redirect to dashboard
-      router.replace("/(dashboard)");
+    // Determine target route
+    let targetRoute: "/auth" | "/onboarding" | "/(dashboard)" | null = null;
+
+    if (!isOnboarded) {
+      targetRoute = "/onboarding";
+    } else if (!isAuthenticated) {
+      targetRoute = "/auth";
+    } else {
+      // User is onboarded and authenticated
+      if (isAuthRoute || isOnboardingRoute) {
+        targetRoute = "/(dashboard)";
+      }
     }
+
+    // Only navigate if we need to and haven't already navigated
+    if (targetRoute && pathname !== targetRoute) {
+      // Use RAF to ensure navigation happens after render
+      navigationTimeoutRef.current = setTimeout(() => {
+        router.replace(targetRoute!);
+        setHasNavigated(true);
+      }, 50); // Small delay to prevent flash
+    } else {
+      setHasNavigated(true);
+    }
+
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
   }, [
     isAuthenticated,
     isInitialized,
@@ -43,5 +73,15 @@ export function useNavigationGuard() {
     router,
     appStoreHydrated,
     authStoreHydrated,
+    isReady,
   ]);
+
+  // Reset navigation state when auth state changes
+  useEffect(() => {
+    setHasNavigated(false);
+  }, [isAuthenticated, isOnboarded]);
+
+  return {
+    isReady: isReady && hasNavigated,
+  };
 }

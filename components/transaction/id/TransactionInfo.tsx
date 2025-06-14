@@ -202,6 +202,8 @@ const TransactionInfo: React.FC<TransactionInfoProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
   },
   section: {
     paddingHorizontal: 16,

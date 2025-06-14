@@ -6,6 +6,7 @@ export default function WalletLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="fund" options={{ headerShown: false }} />
       <Stack.Screen name="withdraw" options={{ headerShown: false }} />
+      <Stack.Screen name="history" options={{ headerShown: false }} />
     </Stack>
   );
 }

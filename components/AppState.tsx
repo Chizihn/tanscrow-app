@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   ActivityIndicator,
+  StatusBar,
   StyleSheet,
   Text,
   TextStyle,
@@ -70,6 +71,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
 }) => {
   return (
     <View style={[styles.centerContainer, style]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {showIcon && (
         <Ionicons
           name={iconName}
@@ -203,6 +205,7 @@ export const InlineError: React.FC<InlineErrorProps> = ({
 const styles = StyleSheet.create({
   centerContainer: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -221,28 +224,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "700",
     color: "#111827",
-    textAlign: "center",
     marginBottom: 8,
+    textAlign: "center",
   },
   errorMessage: {
-    fontSize: 14,
-    color: "#6b7280",
+    fontSize: 16,
+    color: "#6B7280",
     textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 20,
+    marginBottom: 28,
+    lineHeight: 24,
   },
   retryButton: {
-    backgroundColor: "#3b82f6",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: "#3c3f6a",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   retryButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
+    color: "white",
+    fontSize: 16,
     fontWeight: "600",
   },
 

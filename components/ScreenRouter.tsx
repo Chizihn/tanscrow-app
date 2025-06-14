@@ -20,7 +20,7 @@ export function ScreenRouter({ title, subtitle, onBack }: ScreenRouterProps) {
   };
 
   return (
-    <SafeAreaView>
+    <SafeAreaView edges={["top"]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <ArrowLeft size={24} color="#007AFF" />
@@ -39,10 +39,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 18,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#dedede",
   },
   backButton: {
     marginRight: 12,

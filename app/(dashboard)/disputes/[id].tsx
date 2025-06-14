@@ -12,66 +12,25 @@ import {
 } from "react-native";
 
 import { GET_DISPUTE } from "@/assets/graphql/queries/dispute";
+import { useAuthStore } from "@/assets/store/authStore";
 import { Dispute, DisputeStatus } from "@/assets/types/dispute";
-import { getStatusBadgeVariant } from "@/assets/utils/transaction";
+import { formatDate } from "@/assets/utils";
+import { ScreenRouter } from "@/components/ScreenRouter";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 export default function DisputeDetailsScreen() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data, loading, error } = useQuery<{ dispute: Dispute }>(GET_DISPUTE, {
-    variables: { id },
+    variables: { disputeId: id },
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
-    notifyOnNetworkStatusChange: true,
-    onCompleted: (data) => {
-      if (data.dispute) {
-        console.log("dispute", data.dispute);
-      }
-    },
   });
 
   const dispute = data?.dispute ?? null;
-
-  const user = {
-    id: "123", // Assuming current user is the buyer/initiator
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-  };
-
-  const isBuyer = dispute?.transaction?.buyer?.id === user.id;
-
-  const StatusBadge = ({ status }: { status: DisputeStatus }) => {
-    const color = getStatusBadgeVariant(status);
-    return (
-      <View style={[styles.badge, { backgroundColor: color }]}>
-        <Text style={styles.badgeText}>{status}</Text>
-      </View>
-    );
-  };
-
-  const Card = ({
-    children,
-    style,
-  }: {
-    children: React.ReactNode;
-    style?: any;
-  }) => <View style={[styles.card, style]}>{children}</View>;
-
-  const CardHeader = ({
-    title,
-    description,
-  }: {
-    title: string;
-    description?: string;
-  }) => (
-    <View style={styles.cardHeader}>
-      <Text style={styles.cardTitle}>{title}</Text>
-      {description && <Text style={styles.cardDescription}>{description}</Text>}
-    </View>
-  );
+  const isBuyer = dispute?.transaction?.buyer?.id === user?.id;
 
   const handleSubmitEvidence = () => {
     Alert.alert(
@@ -80,29 +39,13 @@ export default function DisputeDetailsScreen() {
     );
   };
 
-  const handleViewEvidence = (evidenceId: string) => {
-    Alert.alert("View Evidence", `Viewing evidence: ${evidenceId}`);
-  };
-
-  const handleViewTransaction = () => {
-    router.push(`/transactions/${dispute?.transactionId}`);
-  };
-
   if (loading) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Back to Transactions</Text>
-        </View>
-        <View style={styles.loadingContainer}>
+        <ScreenRouter title="Dispute Details" />
+        <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading dispute details...</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </View>
     );
@@ -111,254 +54,219 @@ export default function DisputeDetailsScreen() {
   if (error || !dispute) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <ScreenRouter title="Dispute Details" />
+        <View style={styles.centerContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+          <Text style={styles.errorText}>Unable to load dispute</Text>
           <TouchableOpacity
+            style={styles.retryButton}
             onPress={() => router.back()}
-            style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color="#000" />
+            <Text style={styles.retryText}>Go Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Back to Disputes</Text>
-        </View>
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color="#FF3B30" />
-          <Text style={styles.errorText}>
-            {error?.message || "Dispute not found"}
-          </Text>
         </View>
       </View>
     );
   }
 
+  const StatusBadge = ({ status }: { status: DisputeStatus }) => {
+    const getStatusColor = (status: DisputeStatus) => {
+      switch (status) {
+        case DisputeStatus.OPENED:
+          return "#FF9500";
+        case DisputeStatus.IN_REVIEW:
+          return "#007AFF";
+        case DisputeStatus.RESOLVED_FOR_BUYER:
+          return "#34C759";
+        case DisputeStatus.RESOLVED_FOR_SELLER:
+          return "#34C759";
+        default:
+          return "#8E8E93";
+      }
+    };
+
+    return (
+      <View
+        style={[
+          styles.statusBadge,
+          { backgroundColor: getStatusColor(status) },
+        ]}
+      >
+        <Text style={styles.statusBadgeText}>{status.replace("_", " ")}</Text>
+      </View>
+    );
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Back to Transactions</Text>
-      </View>
+      <ScreenRouter title="Dispute Details" />
 
-      {/* Title Section */}
-      <View style={styles.titleSection}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Dispute Details</Text>
+      {/* Header Card */}
+      <View style={styles.headerCard}>
+        <View style={styles.headerTop}>
+          <Text style={styles.disputeTitle}>
+            Dispute #{dispute.id.slice(-6)}
+          </Text>
           <StatusBadge status={dispute.status} />
         </View>
-        <Text style={styles.subtitle}>
-          Transaction: {dispute.transaction.transactionCode}
+        <Text style={styles.transactionCode}>
+          {dispute.transaction.transactionCode}
         </Text>
         <TouchableOpacity
-          style={styles.viewTransactionButton}
-          onPress={handleViewTransaction}
+          style={styles.viewTransactionBtn}
+          onPress={() => router.push(`/transactions/${dispute.transactionId}`)}
         >
+          <Ionicons name="receipt-outline" size={16} color="#007AFF" />
           <Text style={styles.viewTransactionText}>View Transaction</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Dispute Information */}
-      <Card>
-        <CardHeader
-          title="Dispute Information"
-          description="Details about the dispute"
-        />
-        <View style={styles.cardContent}>
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>Transaction Title</Text>
-            <Text style={styles.value}>{dispute.transaction.title}</Text>
+      {/* Quick Info */}
+      <View style={styles.quickInfoCard}>
+        <View style={styles.quickInfoRow}>
+          <View style={styles.quickInfoItem}>
+            <Text style={styles.quickInfoLabel}>Amount</Text>
+            <Text style={styles.quickInfoValue}>
+              ₦{dispute.transaction?.amount}
+            </Text>
           </View>
-
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>Reason for Dispute</Text>
-            <Text style={styles.value}>{dispute.reason}</Text>
-          </View>
-
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>Description</Text>
-            <Text style={styles.value}>{dispute.description}</Text>
-          </View>
-
-          <View style={styles.infoGrid}>
-            <View style={styles.infoGridItem}>
-              <Text style={styles.label}>Initiated By</Text>
-              <Text style={styles.value}>
-                {dispute.initiator.firstName} {dispute.initiator.lastName} (
-                {isBuyer ? "Buyer" : "Seller"})
-              </Text>
-            </View>
-
-            <View style={styles.infoGridItem}>
-              <Text style={styles.label}>Date Opened</Text>
-              <View style={styles.dateRow}>
-                <Ionicons name="calendar-outline" size={16} color="#666" />
-                <Text style={styles.value}>
-                  {dispute.createdAt.toLocaleDateString()}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.infoGridItem}>
-              <Text style={styles.label}>Transaction Amount</Text>
-              <Text style={styles.amountValue}>
-                ₦{dispute.transaction?.amount?.toLocaleString()}
-              </Text>
-            </View>
-
-            <View style={styles.infoGridItem}>
-              <Text style={styles.label}>Status</Text>
-              <StatusBadge status={dispute.status} />
-            </View>
-          </View>
-
-          {/* Parties Involved */}
-          <View style={styles.separator} />
-          <Text style={styles.sectionTitle}>Parties Involved</Text>
-          <View style={styles.partiesGrid}>
-            <View style={styles.partyCard}>
-              <Text style={styles.partyRole}>Buyer</Text>
-              <Text style={styles.partyName}>
-                {dispute.transaction.buyer?.firstName}{" "}
-                {dispute.transaction.buyer?.lastName}
-              </Text>
-              <Text style={styles.partyEmail}>
-                {dispute.transaction.buyer?.email}
-              </Text>
-            </View>
-            <View style={styles.partyCard}>
-              <Text style={styles.partyRole}>Seller</Text>
-              <Text style={styles.partyName}>
-                {dispute.transaction.seller?.firstName}{" "}
-                {dispute.transaction.seller?.lastName}
-              </Text>
-              <Text style={styles.partyEmail}>
-                {dispute.transaction.seller?.email}
-              </Text>
-            </View>
+          <View style={styles.quickInfoItem}>
+            <Text style={styles.quickInfoLabel}>Opened</Text>
+            <Text style={styles.quickInfoValue}>
+              {formatDate(dispute.createdAt)}
+            </Text>
           </View>
         </View>
-      </Card>
+      </View>
 
-      {/* Dispute Status Timeline */}
-      <Card>
-        <CardHeader title="Dispute Status" />
-        <View style={styles.cardContent}>
+      {/* Dispute Details */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Dispute Reason</Text>
+        <Text style={styles.reasonText}>{dispute.reason}</Text>
+        {dispute.description && (
+          <>
+            <Text style={[styles.cardTitle, { marginTop: 16 }]}>
+              Description
+            </Text>
+            <Text style={styles.descriptionText}>{dispute.description}</Text>
+          </>
+        )}
+      </View>
+
+      {/* Parties */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Parties Involved</Text>
+        <View style={styles.partiesContainer}>
+          <View style={styles.partyItem}>
+            <View style={styles.partyHeader}>
+              <Ionicons name="person-outline" size={20} color="#666" />
+              <Text style={styles.partyRole}>Buyer</Text>
+            </View>
+            <Text style={styles.partyName}>
+              {dispute.transaction.buyer?.firstName}{" "}
+              {dispute.transaction.buyer?.lastName}
+            </Text>
+          </View>
+
+          <View style={styles.partyItem}>
+            <View style={styles.partyHeader}>
+              <Ionicons name="storefront-outline" size={20} color="#666" />
+              <Text style={styles.partyRole}>Seller</Text>
+            </View>
+            <Text style={styles.partyName}>
+              {dispute.transaction.seller?.firstName}{" "}
+              {dispute.transaction.seller?.lastName}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Evidence Section */}
+      <View style={styles.card}>
+        <View style={styles.evidenceHeader}>
+          <Text style={styles.cardTitle}>Evidence</Text>
+          <TouchableOpacity
+            style={styles.addEvidenceBtn}
+            onPress={handleSubmitEvidence}
+          >
+            <Ionicons name="add" size={20} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
+
+        {dispute.evidence && dispute.evidence.length > 0 ? (
+          <View style={styles.evidenceList}>
+            {dispute.evidence.map((evidence, index) => (
+              <View key={evidence.id} style={styles.evidenceItem}>
+                <View style={styles.evidenceIcon}>
+                  <Ionicons name="document-text" size={20} color="#007AFF" />
+                </View>
+                <View style={styles.evidenceContent}>
+                  <Text style={styles.evidenceType}>
+                    {evidence.evidenceType}
+                  </Text>
+                  <Text style={styles.evidenceDate}>
+                    {formatDate(evidence?.createdAt as Date)}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.evidenceViewBtn}>
+                  <Ionicons name="eye-outline" size={16} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.noEvidenceContainer}>
+            <Ionicons name="folder-open-outline" size={48} color="#C7C7CC" />
+            <Text style={styles.noEvidenceText}>No evidence submitted yet</Text>
+            <TouchableOpacity
+              style={styles.submitEvidenceBtn}
+              onPress={handleSubmitEvidence}
+            >
+              <Text style={styles.submitEvidenceText}>Submit Evidence</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {/* Status Timeline */}
+      <View style={[styles.card, styles.lastCard]}>
+        <Text style={styles.cardTitle}>Status Timeline</Text>
+        <View style={styles.timeline}>
           <View style={styles.timelineItem}>
-            <View style={styles.timelineDot} />
+            <View style={[styles.timelineDot, styles.completedDot]} />
             <View style={styles.timelineContent}>
               <Text style={styles.timelineTitle}>Dispute Opened</Text>
-              <Text style={styles.timelineDescription}>
-                Dispute has been initiated
-              </Text>
               <Text style={styles.timelineDate}>
-                {dispute.createdAt.toLocaleString()}
+                {formatDate(dispute.createdAt)}
               </Text>
             </View>
           </View>
 
           {dispute.status === DisputeStatus.IN_REVIEW && (
             <View style={styles.timelineItem}>
-              <View style={styles.timelineDot} />
+              <View style={[styles.timelineDot, styles.activeDot]} />
               <View style={styles.timelineContent}>
                 <Text style={styles.timelineTitle}>Under Review</Text>
-                <Text style={styles.timelineDescription}>
-                  A moderator is reviewing the dispute
-                </Text>
-                <Text style={styles.timelineDate}>
-                  {dispute.updatedAt.toLocaleString()}
+                <Text style={styles.timelineSubtext}>
+                  Being reviewed by moderator
                 </Text>
               </View>
             </View>
           )}
 
-          {dispute.status === DisputeStatus.OPENED && (
-            <View style={styles.statusMessage}>
-              <Text style={styles.statusMessageText}>
-                Your dispute is being processed. A moderator will review the
-                case shortly.
+          <View style={styles.timelineItem}>
+            <View style={[styles.timelineDot, styles.pendingDot]} />
+            <View style={styles.timelineContent}>
+              <Text style={[styles.timelineTitle, styles.pendingText]}>
+                Resolution
+              </Text>
+              <Text style={[styles.timelineSubtext, styles.pendingText]}>
+                Pending
               </Text>
             </View>
-          )}
+          </View>
         </View>
-      </Card>
-
-      {/* Evidence Section */}
-      <Card style={styles.lastCard}>
-        <CardHeader
-          title="Evidence"
-          description="Documents and evidence submitted for this dispute"
-        />
-        <View style={styles.cardContent}>
-          {dispute.evidence && dispute.evidence.length > 0 ? (
-            <View>
-              {dispute.evidence.map((evidence) => (
-                <View key={evidence.id} style={styles.evidenceItem}>
-                  <View style={styles.evidenceIcon}>
-                    <Ionicons
-                      name="document-text-outline"
-                      size={20}
-                      color="#666"
-                    />
-                  </View>
-                  <View style={styles.evidenceContent}>
-                    <Text style={styles.evidenceType}>
-                      {evidence.evidenceType}
-                    </Text>
-                    <Text style={styles.evidenceDescription}>
-                      {evidence.description}
-                    </Text>
-                    <Text style={styles.evidenceSubmittedBy}>
-                      Submitted by{" "}
-                      {evidence.submittedBy === user.id
-                        ? "you"
-                        : evidence.submittedBy === dispute.transaction.buyer?.id
-                        ? "buyer"
-                        : "seller"}{" "}
-                      on {evidence.createdAt?.toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.viewEvidenceButton}
-                    onPress={() => handleViewEvidence(evidence.id)}
-                  >
-                    <Ionicons
-                      name="download-outline"
-                      size={16}
-                      color="#007AFF"
-                    />
-                    <Text style={styles.viewEvidenceText}>View</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-              <TouchableOpacity
-                style={styles.submitEvidenceButton}
-                onPress={handleSubmitEvidence}
-              >
-                <Ionicons name="cloud-upload-outline" size={20} color="#FFF" />
-                <Text style={styles.submitEvidenceText}>
-                  Submit New Evidence
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.noEvidenceContainer}>
-              <Text style={styles.noEvidenceText}>
-                No evidence has been submitted yet
-              </Text>
-              <TouchableOpacity
-                style={styles.submitEvidenceButton}
-                onPress={handleSubmitEvidence}
-              >
-                <Ionicons name="cloud-upload-outline" size={20} color="#FFF" />
-                <Text style={styles.submitEvidenceText}>Submit Evidence</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </Card>
+      </View>
     </ScrollView>
   );
 }
@@ -366,252 +274,207 @@ export default function DisputeDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#F2F2F7",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#FFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 16,
-    color: "#666",
-  },
-  loadingContainer: {
+  centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: 32,
   },
   loadingText: {
-    marginTop: 16,
+    marginTop: 12,
     fontSize: 16,
-    color: "#666",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
+    color: "#8E8E93",
   },
   errorText: {
     marginTop: 16,
-    fontSize: 16,
-    color: "#FF3B30",
+    fontSize: 18,
+    color: "#FF6B6B",
     textAlign: "center",
+    fontWeight: "500",
   },
-  titleSection: {
-    padding: 16,
+  retryButton: {
+    marginTop: 20,
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  // Header Card
+  headerCard: {
     backgroundColor: "#FFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
+    margin: 16,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  titleRow: {
+  headerTop: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
+  disputeTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1C1C1E",
   },
-  subtitle: {
+  transactionCode: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 12,
+    color: "#8E8E93",
+    marginBottom: 16,
   },
-  viewTransactionButton: {
-    borderWidth: 1,
-    borderColor: "#007AFF",
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+  viewTransactionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
     alignSelf: "flex-start",
   },
   viewTransactionText: {
     color: "#007AFF",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "500",
+    marginLeft: 6,
   },
-  badge: {
+
+  // Status Badge
+  statusBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  badgeText: {
+  statusBadgeText: {
     color: "#FFF",
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
     textTransform: "uppercase",
   },
+
+  // Quick Info
+  quickInfoCard: {
+    backgroundColor: "#FFF",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 16,
+  },
+  quickInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  quickInfoItem: {
+    alignItems: "center",
+  },
+  quickInfoLabel: {
+    fontSize: 12,
+    color: "#8E8E93",
+    marginBottom: 4,
+    textTransform: "uppercase",
+    fontWeight: "500",
+  },
+  quickInfoValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1C1C1E",
+  },
+
+  // Cards
   card: {
     backgroundColor: "#FFF",
     marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 16,
   },
   lastCard: {
     marginBottom: 32,
   },
-  cardHeader: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
   cardTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 4,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: "#666",
-  },
-  cardContent: {
-    padding: 16,
-  },
-  infoSection: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
-    textTransform: "uppercase",
-    fontWeight: "500",
-  },
-  value: {
-    fontSize: 16,
-    color: "#000",
-  },
-  amountValue: {
-    fontSize: 16,
-    color: "#000",
-    fontWeight: "600",
-  },
-  infoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: -8,
-  },
-  infoGridItem: {
-    width: "50%",
-    paddingHorizontal: 8,
-    marginBottom: 16,
-  },
-  dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  separator: {
-    height: 1,
-    backgroundColor: "#E5E5E5",
-    marginVertical: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#000",
+    fontWeight: "700",
+    color: "#1C1C1E",
     marginBottom: 12,
   },
-  partiesGrid: {
-    flexDirection: "row",
-    gap: 12,
+
+  // Dispute Details
+  reasonText: {
+    fontSize: 16,
+    color: "#1C1C1E",
+    lineHeight: 24,
   },
-  partyCard: {
-    flex: 1,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-    borderRadius: 8,
+  descriptionText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
+  },
+
+  // Parties
+  partiesContainer: {
+    gap: 16,
+  },
+  partyItem: {
+    padding: 16,
+    backgroundColor: "#F2F2F7",
+    borderRadius: 12,
+  },
+  partyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
   },
   partyRole: {
     fontSize: 12,
     color: "#666",
-    marginBottom: 4,
+    marginLeft: 8,
     textTransform: "uppercase",
-    fontWeight: "500",
+    fontWeight: "600",
   },
   partyName: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#000",
-    marginBottom: 2,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1C1C1E",
   },
-  partyEmail: {
-    fontSize: 12,
-    color: "#666",
-  },
-  timelineItem: {
+
+  // Evidence
+  evidenceHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#007AFF",
-    marginTop: 4,
-    marginRight: 12,
+  addEvidenceBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F2F2F7",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  timelineContent: {
-    flex: 1,
-  },
-  timelineTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#000",
-    marginBottom: 2,
-  },
-  timelineDescription: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
-  },
-  timelineDate: {
-    fontSize: 10,
-    color: "#999",
-  },
-  statusMessage: {
-    backgroundColor: "#F0F8FF",
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: "#007AFF",
-  },
-  statusMessageText: {
-    fontSize: 12,
-    color: "#666",
+  evidenceList: {
+    gap: 12,
   },
   evidenceItem: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     padding: 12,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-    borderRadius: 8,
-    marginBottom: 12,
+    backgroundColor: "#F2F2F7",
+    borderRadius: 12,
   },
   evidenceIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#E3F2FD",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -622,55 +485,80 @@ const styles = StyleSheet.create({
   evidenceType: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#000",
-    marginBottom: 4,
+    color: "#1C1C1E",
+    marginBottom: 2,
   },
-  evidenceDescription: {
+  evidenceDate: {
     fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
+    color: "#8E8E93",
   },
-  evidenceSubmittedBy: {
-    fontSize: 10,
-    color: "#999",
-  },
-  viewEvidenceButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#007AFF",
-    borderRadius: 6,
-  },
-  viewEvidenceText: {
-    color: "#007AFF",
-    fontSize: 12,
-    marginLeft: 4,
-  },
-  submitEvidenceButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  submitEvidenceText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "500",
-    marginLeft: 8,
+  evidenceViewBtn: {
+    padding: 8,
   },
   noEvidenceContainer: {
     alignItems: "center",
     paddingVertical: 32,
   },
   noEvidenceText: {
+    fontSize: 16,
+    color: "#8E8E93",
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  submitEvidenceBtn: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  submitEvidenceText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  // Timeline
+  timeline: {
+    gap: 16,
+  },
+  timelineItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 4,
+    marginRight: 12,
+  },
+  completedDot: {
+    backgroundColor: "#34C759",
+  },
+  activeDot: {
+    backgroundColor: "#007AFF",
+  },
+  pendingDot: {
+    backgroundColor: "#C7C7CC",
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineTitle: {
     fontSize: 14,
+    fontWeight: "600",
+    color: "#1C1C1E",
+    marginBottom: 2,
+  },
+  timelineDate: {
+    fontSize: 12,
+    color: "#8E8E93",
+  },
+  timelineSubtext: {
+    fontSize: 12,
     color: "#666",
-    marginBottom: 16,
+  },
+  pendingText: {
+    color: "#C7C7CC",
   },
 });

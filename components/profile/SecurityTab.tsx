@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Button } from "../common";
 
 export function SecurityTab() {
   return (
@@ -24,9 +18,13 @@ export function SecurityTab() {
         </View>
 
         <View style={styles.cardFooter}>
-          <TouchableOpacity style={styles.button} activeOpacity={0.7}>
+          <Button
+            title="Update Password"
+            onPress={() => console.log("presses")}
+          />
+          {/* <TouchableOpacity style={styles.button} activeOpacity={0.7}>
             <Text style={styles.buttonText}>Update Password</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
     </ScrollView>
@@ -124,8 +122,8 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: "#d1d5db",
-    borderRadius: 6,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 16,
     color: "#111827",

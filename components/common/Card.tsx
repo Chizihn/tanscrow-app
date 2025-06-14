@@ -14,7 +14,7 @@ export const Card: React.FC<CardProps> = ({
   style,
   padding = 16,
   margin = 8,
-  shadow = true,
+  shadow = false,
   borderRadius = 8,
 }) => {
   const cardStyle = [

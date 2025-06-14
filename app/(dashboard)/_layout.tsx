@@ -1,6 +1,3 @@
-import HeaderGreeting from "@/components/HeaderGreeting";
-import RightHeader from "@/components/RightHeader";
-
 import { Tabs, usePathname } from "expo-router";
 import {
   AlertTriangle,
@@ -55,7 +52,7 @@ export default function DashboardLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "#3c3f6a",
-        tabBarInactiveTintColor: "#6E6E73",
+        tabBarInactiveTintColor: "#5C5C61",
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarItemStyle: styles.tabBarItem,
         tabBarStyle: {
@@ -69,12 +66,14 @@ export default function DashboardLayout() {
         name="index"
         options={{
           title: "Overview",
-          headerShown: !hideTabBar,
+          // headerShown: !hideTabBar,
+          headerShown: false,
+
           headerTitle: "",
-          headerLeft: !hideTabBar
-            ? () => <HeaderGreeting userName="Chizi" />
-            : undefined,
-          headerRight: !hideTabBar ? () => <RightHeader /> : undefined,
+          // headerLeft: !hideTabBar
+          //   ? () => <HeaderGreeting userName="Chizi" />
+          //   : undefined,
+          // headerRight: !hideTabBar ? () => <RightHeader /> : undefined,
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
               Icon={LayoutDashboard}
@@ -88,6 +87,7 @@ export default function DashboardLayout() {
         name="transactions"
         options={{
           ...getScreenOptions(hideTabBar),
+          freezeOnBlur: false,
           title: "Transactions",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon Icon={Repeat} color={color} focused={focused} />
@@ -130,7 +130,8 @@ export default function DashboardLayout() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    // flex: 1,
+    flex: 1,
+    backgroundColor: "#fff",
   },
 
   tabBar: {

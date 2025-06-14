@@ -1,18 +1,28 @@
-import React from "react";
+import type React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface PageHeaderProps {
   title: string;
-  description: string;
+  description?: string;
+  rightElement?: React.ReactNode;
 }
 
-export default function ScreenHeader({ title, description }: PageHeaderProps) {
+export default function ScreenHeader({
+  title,
+  description,
+  rightElement,
+}: PageHeaderProps) {
   return (
-    <SafeAreaView>
+    <SafeAreaView edges={["top"]}>
       <View style={styles.container}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.description}>{description}</Text>
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{title}</Text>
+          {description && <Text style={styles.description}>{description}</Text>}
+        </View>
+        {rightElement && (
+          <View style={styles.rightElement}>{rightElement}</View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -23,8 +33,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 22,
     backgroundColor: "#ffffff",
-    borderColor: "#f8fafc",
-    borderWidth: 1,
+    borderBottomColor: "#f0f0f0",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  textContainer: {
+    flex: 1,
   },
   title: {
     fontSize: 24,
@@ -36,5 +52,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6b7280",
     lineHeight: 22,
+  },
+  rightElement: {
+    marginLeft: 16,
   },
 });

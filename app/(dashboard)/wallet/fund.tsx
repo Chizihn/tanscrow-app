@@ -370,9 +370,7 @@ export default function FundWalletScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.buttonText}>
-              Proceed to Payment • ₦{total.toLocaleString()}
-            </Text>
+            <Text style={styles.buttonText}>Proceed to Payment</Text>
           )}
         </TouchableOpacity>
 
@@ -447,9 +445,10 @@ export default function FundWalletScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
+    marginTop: 20,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 50,
   },
   label: {
     fontSize: 16,
@@ -541,10 +540,10 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#00C851",
+    color: "#000",
   },
   button: {
-    backgroundColor: "#00C851",
+    backgroundColor: "#3c3f6a",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",

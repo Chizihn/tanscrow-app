@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { Alert } from "react-native";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { ME } from "../graphql/queries/user";
@@ -23,6 +22,7 @@ export interface AuthState extends PersistAuth {
   setError: (error: string | null) => void;
   initializeAuth: () => Promise<void>;
   logout: () => Promise<void>;
+  clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      loading: true, // Start with loading true
+      loading: true,
       isInitialized: false,
       error: null,
 
@@ -40,33 +40,36 @@ export const useAuthStore = create<AuthState>()(
       setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
+      clearError: () => set({ error: null }),
 
       initializeAuth: async () => {
-        // Don't initialize if already initialized
-        if (get().isInitialized) return;
+        const state = get();
+
+        // Prevent multiple initializations
+        if (state.isInitialized) {
+          return;
+        }
 
         try {
-          set({ loading: true });
+          set({ loading: true, error: null });
 
-          // Check if token exists in storage
-          const token = get().token;
+          const token = state.token;
 
           if (!token) {
-            // Alert.alert("Session expired!. Signin again");
-
-            // No token, so we're not authenticated
             set({
               isAuthenticated: false,
               loading: false,
               isInitialized: true,
+              user: null,
             });
             return;
           }
 
-          // We have a token, verify it by fetching user data
+          // Verify token by fetching user data
           const { data } = await apolloClient.query({
             query: ME,
             fetchPolicy: "network-only",
+            errorPolicy: "all",
           });
 
           if (data?.me) {
@@ -75,22 +78,36 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               loading: false,
               isInitialized: true,
+              error: null,
             });
           } else {
-            // Token invalid or expired
+            // Token exists but user data is invalid
             await get().logout();
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Auth initialization error:", error);
-          // Token is invalid, clear everything
+
+          // Set error message for UI to handle
+          set({
+            error: "Session expired. Please sign in again.",
+            loading: false,
+            isInitialized: true,
+          });
+
+          // Clear invalid auth state
           await get().logout();
         }
       },
 
       logout: async () => {
         try {
+          // Clear AsyncStorage
           await AsyncStorage.multiRemove(["token", "tanscrow-auth"]);
+
+          // Clear Apollo cache
           await apolloClient.clearStore();
+
+          // Reset state
           set({
             user: null,
             token: null,
@@ -101,7 +118,15 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           console.error("Error during logout:", error);
-          throw error;
+          // Even if logout fails, reset the state
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            loading: false,
+            isInitialized: true,
+            error: null,
+          });
         }
       },
     }),
@@ -112,9 +137,13 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
-        error: state.error,
-        // Don't persist loading and isInitialized states
       }),
+      onRehydrateStorage: () => (state) => {
+        // Ensure loading is false after rehydration
+        if (state) {
+          state.loading = false;
+        }
+      },
     }
   )
 );

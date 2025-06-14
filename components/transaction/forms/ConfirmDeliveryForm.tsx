@@ -1,6 +1,12 @@
 import { Transaction } from "@/assets/types/transaction";
 import React from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { actionStyles } from "./actionStyles";
 
 interface ConfirmDeliveryFormProps {
@@ -16,23 +22,61 @@ const ConfirmDeliveryForm: React.FC<ConfirmDeliveryFormProps> = ({
 }) => {
   return (
     <View style={actionStyles.container}>
-      <View style={actionStyles.formSection}>
-        <Text style={actionStyles.description}>
-          Confirm that you have received the goods or services as described in
-          this transaction. This will release the funds to the seller.
-        </Text>
-
-        <View style={actionStyles.warningContainer}>
-          <Text style={actionStyles.warningText}>
-            This action cannot be undone. Once you confirm delivery, the funds
-            will be released to the seller.
+      <ScrollView
+        contentContainerStyle={actionStyles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={actionStyles.header}>
+          <Text style={actionStyles.title}>Confirm Delivery</Text>
+          <Text style={actionStyles.subtitle}>
+            Verify that you have received your order as expected.
           </Text>
         </View>
-      </View>
+
+        <View style={actionStyles.statusContainer}>
+          <View style={actionStyles.statusIcon}>
+            <Text style={{ fontSize: 48 }}>📦</Text>
+          </View>
+          <Text style={[actionStyles.statusText, { color: "#1F2937" }]}>
+            Order Delivered?
+          </Text>
+          <Text style={actionStyles.statusSubtext}>
+            Please confirm that you have received the goods or services as
+            described in this transaction.
+          </Text>
+        </View>
+
+        <View style={actionStyles.formSection}>
+          <Text style={actionStyles.sectionTitle}>Before You Confirm</Text>
+          <Text style={actionStyles.description}>
+            • Verify that all items are present and in good condition{"\n"}•
+            Check that the quality matches the description{"\n"}• Ensure any
+            services were completed satisfactorily{"\n"}• Contact the seller if
+            there are any issues
+          </Text>
+        </View>
+
+        <View style={actionStyles.warningContainer}>
+          <View style={actionStyles.warningIcon}>
+            <Text style={{ color: "#F59E0B", fontSize: 16 }}>⚠️</Text>
+          </View>
+          <View style={actionStyles.warningContent}>
+            <Text style={actionStyles.warningTitle}>Important</Text>
+            <Text style={actionStyles.warningText}>
+              This action cannot be undone. Once you confirm delivery, the funds
+              will be released to the seller immediately.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
 
       <View style={actionStyles.footer}>
         <TouchableOpacity
-          style={[actionStyles.button, loading && actionStyles.buttonDisabled]}
+          style={[
+            actionStyles.button,
+            actionStyles.successButton,
+            loading && actionStyles.buttonDisabled,
+          ]}
           onPress={() => onSubmit(transaction.id)}
           disabled={loading}
         >
@@ -43,7 +87,9 @@ const ConfirmDeliveryForm: React.FC<ConfirmDeliveryFormProps> = ({
               style={actionStyles.spinner}
             />
           )}
-          <Text style={actionStyles.buttonText}>Confirm Delivery</Text>
+          <Text style={actionStyles.buttonText}>
+            {loading ? "Confirming..." : "Confirm Delivery"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

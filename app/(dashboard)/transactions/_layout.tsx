@@ -26,10 +26,10 @@ export default function TransactionsLayout() {
 
       <Stack.Screen
         name="[id]"
-        options={({ navigation }) => ({
+        options={{
           headerShown: false,
           title: "Transaction",
-        })}
+        }}
       />
     </Stack>
   );

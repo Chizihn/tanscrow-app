@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   activeTab: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#3c3f6a",
     borderColor: "#3b82f6",
   },
   tabText: {
@@ -122,6 +122,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
+    // padding: 16,
   },
 });

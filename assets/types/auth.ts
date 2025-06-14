@@ -59,3 +59,22 @@ export interface Payload {
   token: string;
   user: User;
 }
+
+export interface AuthFormData {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber: string;
+  confirmPassword?: string;
+}
+
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  newPassword: string;
+  confirmPassword: string;
+  token: string;
+}

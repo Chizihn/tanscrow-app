@@ -7,12 +7,12 @@ import TransactionSkeletonLoader from "@/components/transaction/TransactionSkele
 import TransactionListItem from "@/components/TransactionListItem";
 import { useQuery } from "@apollo/client";
 import { Link } from "expo-router";
+import { Filter, Plus, Search } from "lucide-react-native";
 import { useState } from "react";
 import {
   FlatList,
   Modal,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -47,7 +47,7 @@ export default function TransactionScreen() {
 
   const transactions: Transaction[] = data?.transactions ?? [];
 
-  // Filter transactions based on role and status (matching Next.js logic exactly)
+  // Filter transactions based on role and status
   const getFilteredTransactions = (role: string) => {
     let filtered = transactions;
 
@@ -106,22 +106,23 @@ export default function TransactionScreen() {
   };
 
   const getEmptyMessage = (role: string) => {
-    if (role === "buyer") {
-      return "No transactions found where you are the buyer";
+    const messages = {
+      buyer: "No transactions found where you are the buyer",
+      seller: "No transactions found where you are the seller",
+      all: {
+        active: "No active transactions found",
+        completed: "No completed transactions found",
+        disputed: "No disputed transactions found",
+        default: "No transactions found",
+      },
+    };
+
+    if (role === "buyer" || role === "seller") {
+      return messages[role as keyof typeof messages];
     }
-    if (role === "seller") {
-      return "No transactions found where you are the seller";
-    }
-    if (statusFilter === "active") {
-      return "No active transactions found";
-    }
-    if (statusFilter === "completed") {
-      return "No completed transactions found";
-    }
-    if (statusFilter === "disputed") {
-      return "No disputed transactions found";
-    }
-    return "No transactions found";
+
+    const allMessages = messages.all as any;
+    return allMessages[statusFilter] || allMessages.default;
   };
 
   const getStatusDisplayText = () => {
@@ -134,13 +135,24 @@ export default function TransactionScreen() {
     setShowStatusModal(false);
   };
 
+  const getTabCounts = () => {
+    const allCount = getFilteredTransactions("all").length;
+    const buyerCount = getFilteredTransactions("buyer").length;
+    const sellerCount = getFilteredTransactions("seller").length;
+    return { all: allCount, buyer: buyerCount, seller: sellerCount };
+  };
+
+  const tabCounts = getTabCounts();
+
   const TabButton = ({
     tab,
     title,
+    count,
     isActive,
   }: {
     tab: TabType;
     title: string;
+    count: number;
     isActive: boolean;
   }) => (
     <TouchableOpacity
@@ -154,10 +166,15 @@ export default function TransactionScreen() {
       >
         {title}
       </Text>
+      <View style={[styles.countBadge, isActive && styles.activeCountBadge]}>
+        <Text style={[styles.countText, isActive && styles.activeCountText]}>
+          {count}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 
-  // Render transaction list for each tab (matching Next.js structure)
+  // Render transaction list for each tab
   const renderTransactionList = (role: string) => {
     const filteredTransactions = getFilteredTransactions(role);
 
@@ -168,7 +185,20 @@ export default function TransactionScreen() {
     if (filteredTransactions.length === 0) {
       return (
         <View style={styles.emptyState}>
+          <View style={styles.emptyIconContainer}>
+            <Text style={styles.emptyIcon}>📋</Text>
+          </View>
+          <Text style={styles.emptyStateTitle}>No Transactions Found</Text>
           <Text style={styles.emptyStateText}>{getEmptyMessage(role)}</Text>
+          {role === "all" && (
+            <Link href="/transactions/create" asChild>
+              <TouchableOpacity style={styles.emptyStateButton}>
+                <Text style={styles.emptyStateButtonText}>
+                  Create Your First Transaction
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          )}
         </View>
       );
     }
@@ -198,7 +228,7 @@ export default function TransactionScreen() {
     <Modal
       visible={showStatusModal}
       transparent={true}
-      animationType="fade"
+      animationType="slide"
       onRequestClose={() => setShowStatusModal(false)}
     >
       <TouchableOpacity
@@ -207,7 +237,8 @@ export default function TransactionScreen() {
         onPress={() => setShowStatusModal(false)}
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Select Status</Text>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Filter by Status</Text>
           {statusOptions.map((option) => (
             <TouchableOpacity
               key={option.value}
@@ -226,7 +257,9 @@ export default function TransactionScreen() {
                 {option.label}
               </Text>
               {statusFilter === option.value && (
-                <Text style={styles.checkmark}>✓</Text>
+                <View style={styles.checkmarkContainer}>
+                  <Text style={styles.checkmark}>✓</Text>
+                </View>
               )}
             </TouchableOpacity>
           ))}
@@ -252,17 +285,17 @@ export default function TransactionScreen() {
         description="Manage your escrow transactions"
       />
 
-      {/* Search and Filter */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchRow}>
-          <View style={styles.searchInputContainer}>
+      {/* Search and Filter Section */}
+      <View style={styles.searchSection}>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputWrapper}>
+            <Search size={20} color="#6c757d" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search transactions..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#999"
-              // disabled={loading}
+              placeholderTextColor="#adb5bd"
             />
           </View>
 
@@ -272,52 +305,53 @@ export default function TransactionScreen() {
             activeOpacity={0.7}
             disabled={loading}
           >
+            <Filter size={18} color="#3c3f6a" />
             <Text style={styles.filterButtonText} numberOfLines={1}>
               {getStatusDisplayText()}
             </Text>
-            <Text style={styles.dropdownIcon}>▼</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.tabButtonContainer}>
-            <TabButton
-              tab="all"
-              title="All Transactions"
-              isActive={activeTab === "all"}
-            />
-            <TabButton
-              tab="buyer"
-              title="As Buyer"
-              isActive={activeTab === "buyer"}
-            />
-            <TabButton
-              tab="seller"
-              title="As Seller"
-              isActive={activeTab === "seller"}
-            />
-          </View>
-        </ScrollView>
+      {/* Enhanced Tabs */}
+      <View style={styles.tabSection}>
+        <View style={styles.tabContainer}>
+          <TabButton
+            tab="all"
+            title="All"
+            count={tabCounts.all}
+            isActive={activeTab === "all"}
+          />
+          <TabButton
+            tab="buyer"
+            title="Buying"
+            count={tabCounts.buyer}
+            isActive={activeTab === "buyer"}
+          />
+          <TabButton
+            tab="seller"
+            title="Selling"
+            count={tabCounts.seller}
+            isActive={activeTab === "seller"}
+          />
+        </View>
       </View>
 
-      {/* Transaction Content based on active tab */}
+      {/* Transaction Content */}
       <View style={styles.contentContainer}>
         {activeTab === "all" && renderTransactionList("all")}
         {activeTab === "buyer" && renderTransactionList("buyer")}
         {activeTab === "seller" && renderTransactionList("seller")}
       </View>
 
-      {/* Create Transaction Button */}
+      {/* Floating Action Button */}
       <Link href="/transactions/create" asChild>
         <TouchableOpacity
-          style={styles.createButton}
+          style={styles.fab}
           activeOpacity={0.8}
           disabled={loading}
         >
-          <Text style={styles.createButtonText}> Create Transaction +</Text>
+          <Plus size={24} color="#fff" />
         </TouchableOpacity>
       </Link>
 
@@ -330,117 +364,14 @@ export default function TransactionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9f9f9",
-  },
-
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  searchInputContainer: {
-    flex: 1,
-    height: 50,
-  },
-  searchInput: {
     backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
-    height: "100%",
-    color: "#212529",
   },
 
-  filterButton: {
-    width: 130,
-    height: 50,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    color: "#3c3f6a",
-    fontWeight: "500",
-    flex: 1,
-  },
-  dropdownIcon: {
-    fontSize: 10,
-    color: "#3c3f6a",
-    marginLeft: 4,
-  },
-
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
+  // Search Section
+  searchSection: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 40,
-    maxWidth: 300,
-    width: "100%",
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#212529",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  modalOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  selectedOption: {
-    backgroundColor: "#f0f4ff",
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: "#495057",
-    flex: 1,
-  },
-  selectedOptionText: {
-    color: "#3c3f6a",
-    fontWeight: "500",
-  },
-  checkmark: {
-    fontSize: 16,
-    color: "#3c3f6a",
-    fontWeight: "bold",
-  },
-
-  tabContainer: {
-    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#e9ecef",
     elevation: 1,
@@ -449,73 +380,236 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
-  tabButtonContainer: {
+  searchContainer: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 16,
     paddingHorizontal: 16,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#212529",
+    height: "100%",
+  },
+  filterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f4ff",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 48,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#d4edda",
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: "#3c3f6a",
+    fontWeight: "600",
+  },
+
+  // Tab Section
+  tabSection: {
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
   tabButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
-    paddingHorizontal: 20,
-    marginRight: 4,
+    paddingHorizontal: 12,
     borderBottomWidth: 3,
     borderBottomColor: "transparent",
+    gap: 8,
   },
   activeTabButton: {
     borderBottomColor: "#3c3f6a",
   },
   tabButtonText: {
     fontSize: 15,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#6c757d",
   },
   activeTabButtonText: {
     color: "#3c3f6a",
-    fontWeight: "600",
+  },
+  countBadge: {
+    backgroundColor: "#e9ecef",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: "center",
+  },
+  activeCountBadge: {
+    backgroundColor: "#3c3f6a",
+  },
+  countText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6c757d",
+  },
+  activeCountText: {
+    color: "#fff",
   },
 
+  // Content
   contentContainer: {
     flex: 1,
   },
-
   listContainer: {
     paddingVertical: 8,
     flexGrow: 1,
   },
+
+  // Empty State
   emptyState: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 80,
-    marginHorizontal: 16,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
+    paddingHorizontal: 32,
+    paddingVertical: 64,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#f8f9fa",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  emptyIcon: {
+    fontSize: 32,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#212529",
+    marginBottom: 8,
+    textAlign: "center",
   },
   emptyStateText: {
     fontSize: 16,
     color: "#6c757d",
     textAlign: "center",
-    fontWeight: "500",
+    lineHeight: 24,
+    marginBottom: 32,
   },
-  createButton: {
+  emptyStateButton: {
+    backgroundColor: "#3c3f6a",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+  },
+  emptyStateButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  // Floating Action Button
+  fab: {
     position: "absolute",
     bottom: 24,
     right: 24,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: "#3c3f6a",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 8,
     shadowColor: "#3c3f6a",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
-  createButtonText: {
-    color: "#fff",
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 32,
+    maxHeight: "50%",
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#dee2e6",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
     fontWeight: "700",
+    color: "#212529",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  selectedOption: {
+    backgroundColor: "#f0f4ff",
+  },
+  modalOptionText: {
     fontSize: 16,
-    letterSpacing: 0.5,
+    color: "#495057",
+    flex: 1,
+    fontWeight: "500",
+  },
+  selectedOptionText: {
+    color: "#3c3f6a",
+    fontWeight: "600",
+  },
+  checkmarkContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#3c3f6a",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkmark: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "bold",
   },
 });

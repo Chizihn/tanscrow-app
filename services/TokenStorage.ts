@@ -1,7 +1,7 @@
 // services/tokenStorage.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const TOKEN_KEY = "auth_token";
+const TOKEN_KEY = "token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 const USER_KEY = "user_data";
 

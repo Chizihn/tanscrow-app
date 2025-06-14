@@ -1,6 +1,12 @@
 import { Transaction } from "@/assets/types/transaction";
 import React from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { actionStyles } from "./actionStyles";
 
 interface PaymentFormProps {
@@ -19,44 +25,86 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       onSubmit(transaction.id);
     } catch (error) {
       console.log("Payment failed error", error);
-      // You can replace this with your toast implementation
-      // showErrorToast("Payment failed. Please try again.");
     }
   };
 
+  if (transaction.isPaid) {
+    return (
+      <View style={actionStyles.container}>
+        <ScrollView
+          contentContainerStyle={actionStyles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={actionStyles.statusContainer}>
+            <View style={actionStyles.statusIcon}>
+              <Text style={{ fontSize: 48 }}>✅</Text>
+            </View>
+            <Text style={[actionStyles.statusText, { color: "#10B981" }]}>
+              Payment Complete
+            </Text>
+            <Text style={actionStyles.statusSubtext}>
+              Your payment has been processed successfully.
+            </Text>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
   return (
     <View style={actionStyles.container}>
-      <View style={actionStyles.formSection}>
-        <Text style={actionStyles.label}>Amount</Text>
-        <View style={actionStyles.inputContainer}>
-          <Text style={actionStyles.input}>
-            ₦{transaction.totalAmount.toLocaleString()}
+      <ScrollView
+        contentContainerStyle={actionStyles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={actionStyles.header}>
+          <Text style={actionStyles.title}>Complete Payment</Text>
+          <Text style={actionStyles.subtitle}>
+            Review and complete your payment for this transaction.
           </Text>
         </View>
-      </View>
+
+        <View style={actionStyles.formSection}>
+          <Text style={actionStyles.sectionTitle}>Payment Summary</Text>
+          <View style={actionStyles.inputContainer}>
+            <Text style={actionStyles.label}>Total Amount</Text>
+            <View style={[actionStyles.input, actionStyles.readOnlyInput]}>
+              <Text style={actionStyles.amountDisplay}>
+                ₦{transaction.totalAmount.toLocaleString()}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={actionStyles.formSection}>
+          <Text style={actionStyles.sectionTitle}>Payment Method</Text>
+          <Text style={actionStyles.description}>
+            Your payment will be processed securely through our payment gateway.
+          </Text>
+        </View>
+      </ScrollView>
 
       <View style={actionStyles.footer}>
-        {transaction.isPaid ? (
-          <Text style={actionStyles.successText}>Payment Complete</Text>
-        ) : (
-          <TouchableOpacity
-            style={[
-              actionStyles.button,
-              loading && actionStyles.buttonDisabled,
-            ]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading && (
-              <ActivityIndicator
-                size="small"
-                color="#fff"
-                style={actionStyles.spinner}
-              />
-            )}
-            <Text style={actionStyles.buttonText}>Complete Payment</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[
+            actionStyles.button,
+            actionStyles.primaryButton,
+            loading && actionStyles.buttonDisabled,
+          ]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading && (
+            <ActivityIndicator
+              size="small"
+              color="#fff"
+              style={actionStyles.spinner}
+            />
+          )}
+          <Text style={actionStyles.buttonText}>
+            {loading ? "Processing..." : "Complete Payment"}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

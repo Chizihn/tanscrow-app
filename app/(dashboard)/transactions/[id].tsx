@@ -12,7 +12,7 @@ import TransactionTimeline from "@/components/transaction/id/TransactionTimeline
 import { useQuery } from "@apollo/client";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 export type ActionType =
   | "PAYMENT"
@@ -21,19 +21,6 @@ export type ActionType =
   | "REQUEST_REFUND"
   | "UPDATE_DELIVERY"
   | "DISPUTE";
-
-const { width: screenWidth } = Dimensions.get("window");
-
-// Mobile-optimized spacing constants
-const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  // Responsive horizontal padding based on screen width
-  horizontal: screenWidth < 375 ? 12 : 16,
-};
 
 export default function TransactionDetailScreen() {
   const router = useRouter();
@@ -171,17 +158,19 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   headerSection: {
-    paddingHorizontal: spacing.horizontal,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingHorizontal: 2,
+    paddingTop: 8,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
   },
   mainSection: {
-    paddingHorizontal: spacing.horizontal,
-    gap: spacing.md,
-    marginBottom: spacing.lg,
+    paddingHorizontal: 8,
+    rowGap: 12,
+    marginBottom: 16,
   },
   tabsSection: {
-    paddingHorizontal: spacing.horizontal,
-    paddingBottom: spacing.xl,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
 });

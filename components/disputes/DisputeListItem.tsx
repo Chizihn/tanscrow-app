@@ -1,190 +1,214 @@
 import { Dispute, DisputeStatus } from "@/assets/types/dispute";
 import { Link } from "expo-router";
 import { AlertTriangle, ArrowRight, Clock } from "lucide-react-native";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-const DisputeListItem = ({ dispute }: { dispute: Dispute }) => {
+interface Props {
+  dispute: Dispute;
+}
+
+const DisputeListItem: React.FC<Props> = ({ dispute }) => {
   const formatDate = (date: string | Date) => {
     const dateObj = typeof date === "string" ? new Date(date) : date;
-    return dateObj.toLocaleDateString();
+    return dateObj.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
-  const getStatusColor = (status: DisputeStatus) => {
+  const getStatusConfig = (status: DisputeStatus) => {
     switch (status) {
       case DisputeStatus.OPENED:
-        return "#dc3545"; // red
+        return {
+          backgroundColor: "#f8d7da",
+          color: "#721c24",
+          borderColor: "#f1a6aa",
+          label: "Opened",
+        };
       case DisputeStatus.IN_REVIEW:
-        return "#ffc107"; // amber
+        return {
+          backgroundColor: "#fff3cd",
+          color: "#856404",
+          borderColor: "#ffeaa7",
+          label: "In Review",
+        };
       case DisputeStatus.RESOLVED_FOR_BUYER:
       case DisputeStatus.RESOLVED_FOR_SELLER:
       case DisputeStatus.RESOLVED_COMPROMISE:
       case DisputeStatus.CLOSED:
-        return "#28a745"; // green
+        return {
+          backgroundColor: "#d4edda",
+          color: "#155724",
+          borderColor: "#7fb069",
+          label: "Resolved",
+        };
       default:
-        return "#6c757d";
+        return {
+          backgroundColor: "#e2e3e5",
+          color: "#383d41",
+          borderColor: "#bcc0c4",
+          label: "Unknown",
+        };
     }
   };
 
+  const statusConfig = getStatusConfig(dispute.status);
+
   return (
-    <View style={styles.disputeCard}>
-      <View style={styles.disputeCardContent}>
-        <View style={styles.disputeMainInfo}>
-          <View style={styles.disputeHeader}>
-            <View style={styles.disputeTitleRow}>
-              <AlertTriangle size={16} color="#f59e0b" />
-              <Text style={styles.disputeTitle} numberOfLines={1}>
-                {dispute.transaction.title}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(dispute.status) + "20" },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusBadgeText,
-                  { color: getStatusColor(dispute.status) },
-                ]}
-              >
-                {dispute.status.replace(/_/g, " ")}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.disputeReason} numberOfLines={2}>
-            {dispute.reason}
+    <Link href={`/disputes/${dispute.id}`} asChild>
+      <Pressable style={styles.card}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title} numberOfLines={1}>
+            {dispute.transaction.title}
           </Text>
-
-          <View style={styles.disputeMetaRow}>
-            <Clock size={12} color="#6c757d" />
-            <Text style={styles.disputeMetaText}>
-              Opened on {formatDate(dispute.createdAt)}
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: statusConfig.backgroundColor,
+                borderColor: statusConfig.borderColor,
+              },
+            ]}
+          >
+            <AlertTriangle size={12} color={statusConfig.color} />
+            <Text style={[styles.statusText, { color: statusConfig.color }]}>
+              {statusConfig.label}
             </Text>
           </View>
         </View>
 
-        <View style={styles.disputeActions}>
-          <Text style={styles.disputeAmount}>
-            ₦{dispute.transaction.amount?.toLocaleString()}
+        {/* Description */}
+        {dispute.reason && (
+          <Text style={styles.description} numberOfLines={2}>
+            {dispute.reason}
           </Text>
-          <Text style={styles.disputeTransactionCode}>
-            Transaction: {dispute.transaction.transactionCode}
-          </Text>
+        )}
 
-          <Link href={`/disputes/${dispute.id}`} asChild>
-            <TouchableOpacity
-              style={styles.viewDetailsButton}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.viewDetailsText}>View Details</Text>
-              <ArrowRight size={12} color="#3c3f6a" />
-            </TouchableOpacity>
-          </Link>
+        {/* Meta Info */}
+        <View style={styles.metaRow}>
+          <Clock size={12} color="#6c757d" />
+          <Text style={styles.metaText}>
+            Opened on {formatDate(dispute.createdAt)}
+          </Text>
         </View>
-      </View>
-    </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <View style={styles.amountContainer}>
+            <Text style={styles.amountLabel}>Amount</Text>
+            <Text style={styles.amount}>
+              ₦{dispute.transaction.amount?.toLocaleString() || "0"}
+            </Text>
+          </View>
+
+          <View style={styles.actionButton}>
+            <Text style={styles.actionButtonText}>View Details</Text>
+            <ArrowRight size={16} color="#3c3f6a" />
+          </View>
+        </View>
+      </Pressable>
+    </Link>
   );
 };
+
 export default DisputeListItem;
 
 const styles = StyleSheet.create({
-  // Dispute Card Styles
-  disputeCard: {
+  card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
+    borderRadius: 16,
+    padding: 20,
+
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
   },
-  disputeCardContent: {
-    padding: 16,
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    marginBottom: 12,
   },
-  disputeMainInfo: {
+  title: {
+    fontWeight: "700",
+    fontSize: 17,
     flex: 1,
-    marginRight: 16,
-  },
-  disputeHeader: {
-    marginBottom: 8,
-  },
-  disputeTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  disputeTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#212529",
-    marginLeft: 8,
-    flex: 1,
+    paddingRight: 12,
+    color: "#1a1a1a",
+    lineHeight: 24,
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "capitalize",
-  },
-  disputeReason: {
-    fontSize: 14,
-    color: "#6c757d",
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  disputeMetaRow: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 4,
   },
-  disputeMetaText: {
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  description: {
+    fontSize: 15,
+    color: "#6c757d",
+    marginBottom: 12,
+    lineHeight: 22,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  metaText: {
     fontSize: 12,
     color: "#6c757d",
     marginLeft: 4,
   },
-
-  // Actions Styles
-  disputeActions: {
-    alignItems: "flex-end",
-    minWidth: 120,
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  disputeAmount: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#212529",
-    marginBottom: 4,
+  amountContainer: {
+    flex: 1,
   },
-  disputeTransactionCode: {
-    fontSize: 11,
+  amountLabel: {
+    fontSize: 12,
     color: "#6c757d",
-    marginBottom: 12,
-    textAlign: "right",
+    fontWeight: "500",
+    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  viewDetailsButton: {
+  amount: {
+    fontWeight: "800",
+    fontSize: 20,
+    color: "#1a1a1a",
+  },
+  actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    backgroundColor: "#f0f4ff",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 6,
     borderWidth: 1,
-    borderColor: "#e9ecef",
-    backgroundColor: "#f8f9fa",
+    borderColor: "#e0e7ff",
   },
-  viewDetailsText: {
-    fontSize: 12,
-    fontWeight: "500",
+  actionButtonText: {
     color: "#3c3f6a",
-    marginRight: 6,
+    fontWeight: "600",
+    fontSize: 14,
   },
 });

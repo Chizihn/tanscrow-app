@@ -233,6 +233,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingVertical: 0,
+    marginTop: 20,
   },
   alertCard: {
     flexDirection: "row",

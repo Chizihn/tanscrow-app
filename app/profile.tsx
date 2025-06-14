@@ -5,6 +5,7 @@ import { User } from "@/assets/types/user";
 import { VerificationDocument } from "@/assets/types/verification";
 import { LoadingSpinner } from "@/components/common";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { ScreenRouter } from "@/components/ScreenRouter";
 import { useQuery } from "@apollo/client";
 import React from "react";
 import {
@@ -12,10 +13,8 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user) as User;
@@ -42,7 +41,12 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <ScreenRouter
+        title="Profile"
+        subtitle="Manage your account information and verification"
+      />
+
       <StatusBar
         barStyle={Platform.OS === "ios" ? "dark-content" : "light-content"}
         backgroundColor="#ffffff"
@@ -52,16 +56,9 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
-          <Text style={styles.subtitle}>
-            Manage your account information and verification
-          </Text>
-        </View>
-
         <ProfileTabs user={user} loading={loading} error={error} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -75,22 +72,5 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 32,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#0f172a",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#64748b",
-    lineHeight: 24,
   },
 });

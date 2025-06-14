@@ -1,6 +1,13 @@
 // components/TransactionListItem.tsx
 import { TransactionStatus } from "@/assets/types/transaction";
 import { Link } from "expo-router";
+import {
+  AlertTriangle,
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  XCircle,
+} from "lucide-react-native";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -10,190 +17,234 @@ interface Props {
 }
 
 const TransactionListItem: React.FC<Props> = ({ transaction, userId }) => {
-  // Determine if user is buyer or seller
-
-  // Get status color and background
-  const getStatusStyle = (status: TransactionStatus) => {
+  // Get status configuration
+  const getStatusConfig = (status: TransactionStatus) => {
     switch (status) {
       case TransactionStatus.PENDING:
-        return { backgroundColor: "#fef3c7", color: "#d97706" };
+        return {
+          backgroundColor: "#fff3cd",
+          color: "#856404",
+          borderColor: "#ffeaa7",
+          icon: Clock,
+          label: "Pending",
+        };
       case TransactionStatus.IN_PROGRESS:
-        return { backgroundColor: "#dbeafe", color: "#2563eb" };
+        return {
+          backgroundColor: "#cce5ff",
+          color: "#0056b3",
+          borderColor: "#80bdff",
+          icon: Clock,
+          label: "In Progress",
+        };
       case TransactionStatus.COMPLETED:
-        return { backgroundColor: "#d1fae5", color: "#059669" };
+        return {
+          backgroundColor: "#d4edda",
+          color: "#155724",
+          borderColor: "#7fb069",
+          icon: CheckCircle,
+          label: "Completed",
+        };
       case TransactionStatus.DELIVERED:
-        return { backgroundColor: "#d1fae5", color: "#059669" };
+        return {
+          backgroundColor: "#d4edda",
+          color: "#155724",
+          borderColor: "#7fb069",
+          icon: CheckCircle,
+          label: "Delivered",
+        };
       case TransactionStatus.DISPUTED:
-        return { backgroundColor: "#fee2e2", color: "#dc2626" };
+        return {
+          backgroundColor: "#f8d7da",
+          color: "#721c24",
+          borderColor: "#f1a6aa",
+          icon: AlertTriangle,
+          label: "Disputed",
+        };
       default:
-        return { backgroundColor: "#f3f4f6", color: "#6b7280" };
+        return {
+          backgroundColor: "#e2e3e5",
+          color: "#383d41",
+          borderColor: "#bcc0c4",
+          icon: XCircle,
+          label: "Unknown",
+        };
     }
   };
 
-  const statusStyle = getStatusStyle(transaction.status);
+  const statusConfig = getStatusConfig(transaction.status);
+  const StatusIcon = statusConfig.icon;
 
-  // Format status text
-  const formatStatus = (status: TransactionStatus) => {
-    return status
-      .replace(/_/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (l) => l.toUpperCase());
+  // Format date
+  const formatDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   return (
-    <View style={styles.card}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title} numberOfLines={1}>
-          {transaction.title}
-        </Text>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: statusStyle.backgroundColor },
-          ]}
-        >
-          <Text style={[styles.statusText, { color: statusStyle.color }]}>
-            {formatStatus(transaction.status)}
+    <Link href={`/transactions/${transaction.id}`} asChild>
+      <Pressable style={styles.card}>
+        {/* Header with Title and Status */}
+        <View style={styles.header}>
+          <Text style={styles.title} numberOfLines={1}>
+            {transaction.title}
           </Text>
-        </View>
-      </View>
-
-      {/* Description */}
-      <Text style={styles.description} numberOfLines={2}>
-        {transaction.description || "No description provided"}
-      </Text>
-
-      {/* <Text>Created: {formatDate(transaction.createdAt as Date)}</Text> */}
-
-      {/* Role and Other Party Info */}
-      {/* <View style={styles.roleContainer}>
-        <View style={styles.roleInfo}>
           <View
             style={[
-              styles.roleDot,
+              styles.statusBadge,
               {
-                backgroundColor: userRole === "buyer" ? "#3b82f6" : "#10b981",
+                backgroundColor: statusConfig.backgroundColor,
+                borderColor: statusConfig.borderColor,
               },
             ]}
-          />
-          <Text style={styles.roleText}>
-            You are the {userRole} • {otherParty?.firstName || "Unknown"}{" "}
-            {otherParty?.lastName || "Unknown"}
-          </Text>
+          >
+            <StatusIcon size={12} color={statusConfig.color} />
+            <Text style={[styles.statusText, { color: statusConfig.color }]}>
+              {statusConfig.label}
+            </Text>
+          </View>
         </View>
-        <Text style={styles.date}>
-          {new Date(transaction.createdAt).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </Text>
-      </View> */}
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.amount}>
-          ₦{transaction.amount?.toLocaleString() || "0"}
-        </Text>
-        <Link href={`/transactions/${transaction.id}`} asChild>
-          <Pressable style={styles.viewButton}>
-            <Text style={styles.viewButtonText}>View</Text>
-          </Pressable>
-        </Link>
-      </View>
-    </View>
+        {/* Description */}
+        {transaction.description && (
+          <Text style={styles.description} numberOfLines={2}>
+            {transaction.description}
+          </Text>
+        )}
+
+        {/* Role and Other Party Info */}
+        <View style={styles.roleContainer}>
+          <Text style={styles.date}>{formatDate(transaction.createdAt)}</Text>
+        </View>
+
+        {/* Footer with Amount and Action */}
+        <View style={styles.footer}>
+          <View style={styles.amountContainer}>
+            <Text style={styles.amountLabel}>Amount</Text>
+            <Text style={styles.amount}>
+              ₦{transaction.amount?.toLocaleString() || "0"}
+            </Text>
+          </View>
+
+          <View style={styles.actionButton}>
+            <Text style={styles.actionButtonText}>View Details</Text>
+            <ChevronRight size={16} color="#3c3f6a" />
+          </View>
+        </View>
+      </Pressable>
+    </Link>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginVertical: 6,
     marginHorizontal: 16,
     elevation: 2,
-    boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.1)",
-
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     borderWidth: 1,
     borderColor: "#f0f0f0",
   },
+
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
+    alignItems: "flex-start",
+    marginBottom: 12,
   },
+
   title: {
-    fontWeight: "600",
-    fontSize: 16,
+    fontWeight: "700",
+    fontSize: 17,
     flex: 1,
     paddingRight: 12,
     color: "#1a1a1a",
+    lineHeight: 24,
   },
+
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 4,
   },
+
   statusText: {
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  description: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  roleContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  roleInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  roleDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  roleText: {
     fontSize: 12,
-    color: "#666",
-    flex: 1,
+    fontWeight: "600",
+    letterSpacing: 0.3,
   },
+
+  description: {
+    fontSize: 15,
+    color: "#6c757d",
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+
+  roleContainer: {
+    marginBottom: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    paddingHorizontal: 2,
+  },
+
   date: {
-    fontSize: 11,
-    color: "#999",
+    fontSize: 12,
+    color: "#adb5bd",
     fontWeight: "500",
   },
+
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
+
+  amountContainer: {
+    flex: 1,
+  },
+
+  amountLabel: {
+    fontSize: 12,
+    color: "#6c757d",
+    fontWeight: "500",
+    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
   amount: {
-    fontWeight: "bold",
-    fontSize: 18,
+    fontWeight: "800",
+    fontSize: 20,
     color: "#1a1a1a",
   },
-  viewButton: {
-    backgroundColor: "#3c3f6a",
-    paddingVertical: 8,
+
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f4ff",
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    borderRadius: 12,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#e0e7ff",
   },
-  viewButtonText: {
-    color: "#fff",
+
+  actionButtonText: {
+    color: "#3c3f6a",
     fontWeight: "600",
     fontSize: 14,
   },
