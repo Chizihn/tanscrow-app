@@ -2,7 +2,6 @@ import {
   GET_USER_DASHBOARD_SUMMARY,
   GET_USER_WALLET_SUMMARY,
 } from "@/assets/graphql/queries/user";
-import { useAppStore } from "@/assets/store/appStore";
 import { useAuthStore } from "@/assets/store/authStore";
 import type {
   UserDashboardSummary,
@@ -44,8 +43,7 @@ const { width } = Dimensions.get("window");
 export default function DashboardScreen() {
   useNotifications();
   const user = useAuthStore((state) => state.user);
-  const { setFromIndexTransaction, setFromIndexFund, setFromIndexWithdraw } =
-    useAppStore();
+
   const [refreshing, setRefreshing] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const fadeAnim = new Animated.Value(1);
@@ -178,7 +176,7 @@ export default function DashboardScreen() {
                 <Animated.View style={{ opacity: fadeAnim }}>
                   <Text style={styles.walletAmount}>
                     {walletLoading
-                      ? "Loading..."
+                      ? "....."
                       : formatCurrency(wallet?.totalBalance || 0)}
                   </Text>
                 </Animated.View>
@@ -212,7 +210,6 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 style={[styles.actionCard, styles.primaryAction]}
                 onPress={() => {
-                  setFromIndexTransaction(true);
                   router.push("/transactions/create");
                 }}
                 activeOpacity={0.8}
@@ -232,7 +229,6 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 style={styles.actionCard}
                 onPress={() => {
-                  setFromIndexFund(true);
                   router.push("/wallet/fund");
                 }}
                 activeOpacity={0.8}
@@ -247,7 +243,6 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 style={styles.actionCard}
                 onPress={() => {
-                  setFromIndexWithdraw(true);
                   router.push("/wallet/withdraw");
                 }}
                 activeOpacity={0.8}

@@ -13,7 +13,7 @@ import {
   Shield,
   User,
 } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -45,10 +45,7 @@ export default function SettingScreen() {
   const { logout } = useAuthStore();
   const router = useRouter();
 
-  const [notificationsEnabled, setNotificationsEnabled] =
-    React.useState<boolean>(true);
-  const [biometricEnabled, setBiometricEnabled] =
-    React.useState<boolean>(false);
+  const [biometricEnabled, setBiometricEnabled] = useState<boolean>(false);
 
   const handleLogout = (): void => {
     Alert.alert(
@@ -143,14 +140,6 @@ export default function SettingScreen() {
             title="Notifications"
             subtitle="Manage your notification preferences"
             onPress={() => console.log("Navigate to notifications")}
-            rightElement={
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-                trackColor={{ false: "#E5E7EB", true: "#3C3F6A" }}
-                thumbColor="#FFFFFF"
-              />
-            }
           />
         </SettingsSection>
 

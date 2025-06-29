@@ -1,6 +1,5 @@
 import { CREATE_TRANSACTION } from "@/assets/graphql/mutations/transaction";
 import { SEARCH_USER } from "@/assets/graphql/queries/user";
-import { useAppStore } from "@/assets/store/appStore";
 import { useAuthStore } from "@/assets/store/authStore";
 import { useTransactionStore } from "@/assets/store/transactionStore";
 import { PaymentCurrency } from "@/assets/types/payment";
@@ -32,8 +31,6 @@ import {
 
 const CreateTransactionScreen = ({ navigation }: any) => {
   const router = useRouter();
-  const fromIndex = useAppStore((s) => s.fromIndexTransaction);
-  const { setFromIndexTransaction } = useAppStore();
   const user = useAuthStore((state) => state.user) as User;
   const [step, setStep] = useState<number>(1);
   const [date, setDate] = useState<Date>();
@@ -158,15 +155,6 @@ const CreateTransactionScreen = ({ navigation }: any) => {
       <ScreenRouter
         title="Create Transaction"
         subtitle="Set up a new escrow transaction in a few steps"
-        onBack={() => {
-          if (fromIndex) {
-            setFromIndexTransaction(false);
-            router.replace("/");
-          } else {
-            setFromIndexTransaction(false);
-            router.back();
-          }
-        }}
       />
 
       <KeyboardAvoidingView

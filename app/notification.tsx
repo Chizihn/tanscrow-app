@@ -150,10 +150,9 @@ export default function NotificationScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <ScreenRouter title="Notifications" onBack={() => router.back()} />
 
       <View style={styles.header}>
-        <ScreenRouter title="Notifications" onBack={() => router.back()} />
-
         {unreadCount > 0 && (
           <TouchableOpacity
             style={styles.markAllButton}
@@ -264,11 +263,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   header: {
-    backgroundColor: "#FFFFFF",
+    // backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
     paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
+    // borderBottomWidth: 1,
+    // borderBottomColor: "#E2E8F0",
   },
   markAllButton: {
     alignSelf: "flex-end",

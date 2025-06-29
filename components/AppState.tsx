@@ -10,6 +10,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import ScreenHeader from "./ScreenHeader";
 
 // =============================================================================
 // LOADING STATE COMPONENT
@@ -71,6 +72,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
 }) => {
   return (
     <View style={[styles.centerContainer, style]}>
+      <ScreenHeader title="Chats" description="Manage your chats" />
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {showIcon && (
         <Ionicons

@@ -23,7 +23,7 @@ export function ScreenRouter({ title, subtitle, onBack }: ScreenRouterProps) {
     <SafeAreaView edges={["top"]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <ArrowLeft size={24} color="#007AFF" />
+          <ArrowLeft size={24} color="#000" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.title}>{title}</Text>

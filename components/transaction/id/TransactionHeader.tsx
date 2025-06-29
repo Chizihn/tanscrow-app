@@ -58,6 +58,14 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
               onPress={() => setActiveAction("PAYMENT")}
             >
               <Text style={styles.primaryButtonText}>Pay Now</Text>
+            </TouchableOpacity>,
+            <TouchableOpacity
+              key="cancel"
+              style={[styles.secondaryButton]}
+              onPress={() => setActiveAction("CANCEL")}
+            >
+              <XCircle size={16} color="#6b7280" />
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
             </TouchableOpacity>
           );
           break;
@@ -72,29 +80,14 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
               <Text style={styles.primaryButtonText}>Confirm Delivery</Text>
             </TouchableOpacity>
           );
-          buttons.push(
-            <TouchableOpacity
-              key="cancel"
-              style={[styles.secondaryButton]}
-              onPress={() => setActiveAction("CANCEL")}
-            >
-              <XCircle size={16} color="#6b7280" />
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          );
           break;
         case "DELIVERED":
-          buttons.push(
-            <TouchableOpacity
-              key="payment-sent"
-              style={[styles.disabledButton]}
-              disabled
-            >
-              <CheckCircle size={16} color="#9ca3af" />
-              <Text style={styles.disabledButtonText}>Payment Sent</Text>
-            </TouchableOpacity>
-          );
-          if (transaction.escrowStatus === "FUNDED") {
+          // Only buyer can request refund when escrow is funded
+          if (
+            isBuyer &&
+            transaction.escrowStatus === "FUNDED" &&
+            !transaction.refundRequested
+          ) {
             buttons.push(
               <TouchableOpacity
                 key="request-refund"
@@ -105,13 +98,38 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
                 <Text style={styles.secondaryButtonText}>Request Refund</Text>
               </TouchableOpacity>
             );
+          } else {
+            buttons.push(
+              <TouchableOpacity
+                key="payment-sent"
+                style={[styles.disabledButton]}
+                disabled
+              >
+                <CheckCircle size={16} color="#9ca3af" />
+                <Text style={styles.disabledButtonText}>Payment Sent</Text>
+              </TouchableOpacity>
+            );
           }
+          break;
+        case "COMPLETED":
+          buttons.push(
+            <TouchableOpacity
+              key="completed"
+              style={[styles.disabledButton]}
+              disabled
+            >
+              <CheckCircle size={16} color="#9ca3af" />
+              <Text style={styles.disabledButtonText}>
+                Transaction Completed
+              </Text>
+            </TouchableOpacity>
+          );
           break;
       }
     }
 
-    // Seller actions
-    if (isSeller) {
+    // Seller actions - ensure seller role
+    if (isSeller && transaction.status !== "DISPUTED") {
       switch (transaction.status) {
         case "IN_PROGRESS":
           buttons.push(
@@ -124,33 +142,51 @@ const TransactionHeader: React.FC<TransactionHeaderProps> = ({
               <Text style={styles.primaryButtonText}>Update Delivery</Text>
             </TouchableOpacity>
           );
+          // Only show cancel if delivery hasn't been updated
+          if (!transaction.deliveryDetails) {
+            buttons.push(
+              <TouchableOpacity
+                key="cancel"
+                style={[styles.secondaryButton]}
+                onPress={() => setActiveAction("CANCEL")}
+              >
+                <XCircle size={16} color="#6b7280" />
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            );
+          }
+          break;
+        case "COMPLETED":
           buttons.push(
             <TouchableOpacity
-              key="cancel"
-              style={[styles.secondaryButton]}
-              onPress={() => setActiveAction("CANCEL")}
+              key="completed"
+              style={[styles.disabledButton]}
+              disabled
             >
-              <XCircle size={16} color="#6b7280" />
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
+              <CheckCircle size={16} color="#9ca3af" />
+              <Text style={styles.disabledButtonText}>
+                Transaction Completed
+              </Text>
             </TouchableOpacity>
           );
           break;
       }
     }
 
-    // Common dispute action
+    // Dispute action with role-specific conditions
     if (
-      (isBuyer || isSeller) &&
       transaction.status !== "COMPLETED" &&
       transaction.status !== "CANCELED" &&
-      transaction.escrowStatus !== "REFUNDED"
+      transaction.status !== "DISPUTED" &&
+      transaction.escrowStatus !== "REFUNDED" &&
+      ((isBuyer && transaction.status !== "PENDING") || // Buyer can dispute after payment
+        (isSeller && transaction.status === "IN_PROGRESS")) // Seller can dispute during delivery
     ) {
       buttons.push(
         <TouchableOpacity
           key="dispute"
           style={[styles.dangerButton]}
           onPress={() => setActiveAction("DISPUTE")}
-          disabled={transaction.status === TransactionStatus.DISPUTED}
         >
           <AlertCircle size={16} color="white" />
           <Text style={styles.dangerButtonText}>Raise Dispute</Text>

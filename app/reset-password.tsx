@@ -19,7 +19,7 @@ import {
   View,
 } from "react-native";
 
-export const ResetPasswordScreen: React.FC = () => {
+export default function ResetPasswordScreen() {
   const router = useRouter();
 
   const [step, setStep] = useState<1 | 2>(1); // Step 1: OTP, Step 2: Reset Password
@@ -193,7 +193,7 @@ export const ResetPasswordScreen: React.FC = () => {
       </ScrollView>
     </KeyboardAvoidingView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

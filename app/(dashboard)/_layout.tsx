@@ -2,6 +2,7 @@ import { Tabs, usePathname } from "expo-router";
 import {
   AlertTriangle,
   LayoutDashboard,
+  MessageCircleCode,
   Repeat,
   Settings,
   Wallet as WalletIcon,
@@ -19,7 +20,7 @@ const TabBarIcon = ({
   focused: boolean;
 }) => (
   <Icon
-    size={focused ? 24 : 20}
+    size={focused ? 20 : 16}
     color={focused ? "#3c3f6a" : color}
     style={{
       transform: [{ scale: focused ? 1.1 : 1 }],
@@ -37,6 +38,7 @@ export default function DashboardLayout() {
     { base: "/disputes/", except: "/disputes/index" },
     { base: "/wallet/", except: "/wallet/index" },
     { base: "/settings/", except: "/settings/index" },
+    { base: "/chat/", except: "/chat/index" },
   ];
 
   const hideTabBar = pathsToHideTabBar.some(
@@ -104,6 +106,22 @@ export default function DashboardLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="chat"
+        options={{
+          ...getScreenOptions(hideTabBar),
+          title: "Chat",
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
+              Icon={MessageCircleCode}
+              color={color}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="wallet"
         options={{
@@ -137,18 +155,20 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: "#FFFFFF",
     borderTopWidth: 0,
-    paddingTop: Platform.OS === "ios" ? 4 : 6,
+    paddingTop: Platform.OS === "ios" ? 4 : 0,
     elevation: 4,
     boxShadow: "0 -2px 4px rgba(0, 0, 0, 0.05)",
   },
   tabBarLabel: {
     fontSize: 11,
-    color: "#B0B3B8",
+    // color: "#B0B3B8",
+    color: "#888888",
+
     fontWeight: "600",
-    marginTop: 4,
+    marginTop: Platform.OS === "ios" ? 4 : 2,
   },
   tabBarItem: {
-    paddingVertical: Platform.OS === "ios" ? 4 : 6,
-    minHeight: 48,
+    paddingVertical: Platform.OS === "ios" ? 4 : 0,
+    minHeight: Platform.OS === "ios" ? 48 : 52,
   },
 });

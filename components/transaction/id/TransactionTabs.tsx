@@ -1,21 +1,92 @@
+import { CREATE_CHAT } from "@/assets/graphql/mutations/chat";
+import { GET_MYCHATS } from "@/assets/graphql/queries/chat";
+import { useAuthStore } from "@/assets/store/authStore";
+import { Chat } from "@/assets/types/chat";
 import { Transaction } from "@/assets/types/transaction";
+import { handleApolloError } from "@/assets/utils/error";
+import toastConfig from "@/components/ToastConfig";
+import { useMutation } from "@apollo/client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import { Download, MessageSquare } from "lucide-react-native";
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface TransactionTabsProps {
   transaction: Transaction;
 }
 
 const TransactionTabs: React.FC<TransactionTabsProps> = ({ transaction }) => {
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<"messages" | "documents">(
     "messages"
   );
+
+  const [createChat, { loading: creatingChat }] = useMutation<{
+    createChat: Chat;
+  }>(CREATE_CHAT, {
+    onCompleted: (data) => {
+      if (data.createChat) {
+        router.push(`/chat/${data.createChat.id}`);
+      }
+    },
+    onError: (error) => {
+      const err = handleApolloError(error);
+      Alert.alert(err);
+      console.error("Errr msg", err);
+      toastConfig.error({
+        text2: err,
+      });
+      console.error("Error creating chat:", error);
+
+      // Check if error is about existing chat
+      const errorMessage = error.message;
+      if (errorMessage.includes("Chat already exists with ID:")) {
+        // Extract chat ID from error message
+        const chatId = errorMessage.split("Chat already exists with ID: ")[1];
+        if (chatId) {
+          // Navigate to existing chat
+          router.push(`/chat/${chatId}`);
+        }
+      }
+    },
+    refetchQueries: [{ query: GET_MYCHATS }],
+  });
+
+  const handleCreateChat = () => {
+    if (!user?.id) {
+      console.error("User not authenticated");
+      return;
+    }
+
+    // Determine the other participant
+    const otherParticipantId =
+      user.id === transaction.buyer.id
+        ? transaction.seller.id
+        : transaction.buyer.id;
+
+    createChat({
+      variables: { participantId: otherParticipantId },
+    });
+  };
 
   return (
     <View style={styles.container}>
       {/* Tab Headers */}
       <View style={styles.tabsHeader}>
+        <TouchableOpacity
+          onPress={async () => {
+            try {
+              const token = await AsyncStorage.getItem("token");
+              console.log("token", token);
+            } catch (error) {
+              console.error("Failed to get token:", error);
+            }
+          }}
+        >
+          <Text>get tokken</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "messages" && styles.activeTab]}
           onPress={() => setActiveTab("messages")}
@@ -64,9 +135,15 @@ const TransactionTabs: React.FC<TransactionTabsProps> = ({ transaction }) => {
             <Text style={styles.emptyStateDescription}>
               Start a conversation with the other party
             </Text>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleCreateChat}
+              disabled={creatingChat}
+            >
               <MessageSquare size={16} color="white" />
-              <Text style={styles.actionButtonText}>Start Conversation</Text>
+              <Text style={styles.actionButtonText}>
+                {creatingChat ? "Creating..." : "Start Conversation"}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (

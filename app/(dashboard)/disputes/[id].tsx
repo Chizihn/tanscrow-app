@@ -12,7 +12,6 @@ import {
 } from "react-native";
 
 import { GET_DISPUTE } from "@/assets/graphql/queries/dispute";
-import { useAuthStore } from "@/assets/store/authStore";
 import { Dispute, DisputeStatus } from "@/assets/types/dispute";
 import { formatDate } from "@/assets/utils";
 import { ScreenRouter } from "@/components/ScreenRouter";
@@ -20,7 +19,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 export default function DisputeDetailsScreen() {
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data, loading, error } = useQuery<{ dispute: Dispute }>(GET_DISPUTE, {
@@ -30,7 +28,6 @@ export default function DisputeDetailsScreen() {
   });
 
   const dispute = data?.dispute ?? null;
-  const isBuyer = dispute?.transaction?.buyer?.id === user?.id;
 
   const handleSubmitEvidence = () => {
     Alert.alert(

@@ -1,17 +1,21 @@
 // components/profile/VerificationTab.tsx
 import { SUBMIT_VERIFICATION_DOCUMENT } from "@/assets/graphql/mutations/verification";
-import { uploadDocument } from "@/assets/lib/cloudinary";
+import { MY_VERIFICATION_DOCUMENTS } from "@/assets/graphql/queries/verification";
+import {
+  generateDocumentS3Key,
+  uploadToS3,
+  validateDocument,
+} from "@/assets/lib/s3-upload";
 import { useAuthStore } from "@/assets/store/authStore";
-import { User } from "@/assets/types/user";
 import {
   DocumentType,
   VerificationDocument,
   VerificationStatus,
 } from "@/assets/types/verification";
-import { ApolloError, useMutation } from "@apollo/client";
-import { Ionicons } from "@expo/vector-icons";
+import { useMutation, useQuery } from "@apollo/client";
 import * as DocumentPicker from "expo-document-picker";
-import React, { useState } from "react";
+import { AlertCircle, FileText, Upload } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -24,32 +28,32 @@ import {
 import { Badge, Card } from "../common";
 import DocumentUploadModal from "./DocumentUploadModal";
 
-interface VerificationTabProps {
-  user: User;
-  loading: boolean;
-  error?: ApolloError;
-}
-
-export function VerificationTab({
-  user,
-  loading,
-  error,
-}: VerificationTabProps) {
-  const { setUser } = useAuthStore();
+export function VerificationTab() {
+  const { user, setUser } = useAuthStore();
   const [uploadLoading, setUploadLoading] = useState<DocumentType | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] =
     useState<DocumentType | null>(null);
 
-  const [submitDocument] = useMutation(SUBMIT_VERIFICATION_DOCUMENT, {
-    onCompleted: (data) => {
+  const { loading, error, data, refetch } = useQuery(
+    MY_VERIFICATION_DOCUMENTS,
+    {
+      fetchPolicy: "cache-and-network",
+    }
+  );
+
+  useEffect(() => {
+    if (data?.myVerificationDocuments) {
       setUser({
         ...user,
-        verificationDocuments: [
-          ...(user.verificationDocuments || []),
-          data?.submitVerificationDocument,
-        ].filter((doc): doc is VerificationDocument => doc !== undefined),
+        verificationDocuments: data.myVerificationDocuments,
       });
+    }
+  }, [data, setUser]);
+
+  const [submitDocument] = useMutation(SUBMIT_VERIFICATION_DOCUMENT, {
+    onCompleted: (data) => {
+      refetch();
       Alert.alert("Success", "Document submitted successfully!");
     },
     onError: (error) => {
@@ -80,27 +84,26 @@ export function VerificationTab({
       }
 
       if (result.assets && result.assets[0]) {
-        // Create a File-like object from the document picker result
+        const asset = result.assets[0];
+
         const file = {
-          uri: result.assets[0].uri,
-          name: result.assets[0].name,
-          type: result.assets[0].mimeType || "image/jpeg",
+          uri: asset.uri,
+          name: asset.name,
+          type: asset.mimeType || "application/octet-stream",
+          size: asset.size,
         };
 
-        // Upload to Cloudinary
-        const uploadResult = await uploadDocument(file as any);
+        validateDocument(file); // Will throw if invalid
 
-        if (!uploadResult?.secure_url) {
-          throw new Error("Failed to get upload URL");
-        }
+        const s3Key = generateDocumentS3Key(file.name);
+        const s3Url = await uploadToS3(file, s3Key);
 
-        // Submit the document data to our API
         await submitDocument({
           variables: {
             input: {
               documentType,
               documentNumber,
-              documentUrl: uploadResult.secure_url,
+              documentUrl: s3Url,
             },
           },
         });
@@ -118,10 +121,12 @@ export function VerificationTab({
     }
   };
 
-  const verificationDocuments = user?.verificationDocuments || [];
+  const verificationDocuments = data?.myVerificationDocuments || [];
 
   const hasDocumentType = (type: DocumentType) => {
-    return verificationDocuments.some((doc) => doc.documentType === type);
+    return verificationDocuments.some(
+      (doc: VerificationDocument) => doc.documentType === type
+    );
   };
 
   const formatDate = (dateString: string | Date) => {
@@ -152,7 +157,7 @@ export function VerificationTab({
     return (
       <Card>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={24} color="#ef4444" />
+          <AlertCircle size={24} color="#ef4444" />
           <Text style={styles.errorText}>
             Failed to load verification documents. Please try again later.
           </Text>
@@ -225,7 +230,7 @@ function VerificationItem({
     <View style={styles.verificationItem}>
       <View style={styles.verificationItemLeft}>
         <View style={styles.iconContainer}>
-          <Ionicons name="document-text" size={20} color="#64748b" />
+          <FileText size={20} color="#64748b" />
         </View>
         <View style={styles.verificationItemContent}>
           <Text style={styles.verificationItemTitle}>{title}</Text>
@@ -247,7 +252,7 @@ function VerificationItem({
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <>
-                <Ionicons name="cloud-upload" size={16} color="#ffffff" />
+                <Upload size={16} color="#ffffff" />
                 <Text style={styles.uploadButtonText}>Upload</Text>
               </>
             )}

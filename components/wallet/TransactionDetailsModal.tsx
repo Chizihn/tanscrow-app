@@ -1,4 +1,13 @@
-import { WalletTransaction } from "@/assets/types/wallet";
+import { API_URL_2 } from "@/assets/constants";
+import { GET_WALLET } from "@/assets/graphql/queries/wallet";
+import { apolloClient } from "@/assets/lib/apolloClient";
+import { useWalletTransactionStore } from "@/assets/store/walletTransactionStore";
+import { PaymentGateway } from "@/assets/types/payment";
+import {
+  WalletTransaction,
+  WalletTransactionStatus,
+  WalletTransactionType,
+} from "@/assets/types/wallet";
 import {
   ArrowDown,
   ArrowDownLeft,
@@ -7,11 +16,12 @@ import {
   CheckCircle,
   Clock,
   Copy,
+  Loader2,
   Plus,
   X,
   XCircle,
 } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Clipboard,
@@ -34,23 +44,118 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
   transaction,
   onClose,
 }) => {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const { updateTransactionStatus } = useWalletTransactionStore();
+
   if (!transaction) return null;
+
+  // Extract payment gateway from description
+  const extractPaymentGateway = (
+    description: string
+  ): PaymentGateway | null => {
+    const lowerDescription = description.toLowerCase();
+    if (lowerDescription.includes("paystack")) return PaymentGateway.PAYSTACK;
+    if (lowerDescription.includes("flutterwave"))
+      return PaymentGateway.FLUTTERWAVE;
+    return null;
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!transaction.reference) {
+      Alert.alert("Error", "Transaction reference is missing");
+      return;
+    }
+
+    setIsConfirming(true);
+
+    try {
+      // Extract payment gateway from transaction description
+      const paymentGateway = extractPaymentGateway(transaction.description);
+
+      if (!paymentGateway) {
+        Alert.alert("Error", "Could not determine payment gateway");
+        return;
+      }
+
+      const endpoint =
+        paymentGateway === PaymentGateway.PAYSTACK
+          ? `${API_URL_2}/webhooks/payment/verify/paystack?reference=${encodeURIComponent(
+              transaction.reference
+            )}`
+          : `${API_URL_2}/webhooks/payment/verify/flutterwave?tx_ref=${encodeURIComponent(
+              transaction.reference
+            )}`;
+
+      console.log("Verifying payment with endpoint:", endpoint);
+
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success || result.status === "success") {
+        await apolloClient.query({
+          query: GET_WALLET,
+          fetchPolicy: "network-only", // bypass cache
+        });
+        // Update transaction status locally
+        updateTransactionStatus(
+          transaction.id,
+          WalletTransactionStatus.COMPLETED
+        );
+
+        // Optionally refetch the query if Apollo client is provided
+        if (apolloClient) {
+          try {
+            await apolloClient.refetchQueries({
+              include: ["GET_WALLET_TRANSACTIONS"],
+            });
+          } catch (refetchError) {
+            console.log("Refetch error:", refetchError);
+            // Continue anyway since local state is updated
+          }
+        }
+
+        Alert.alert("Success", "Payment confirmed successfully!", [
+          { text: "OK", onPress: onClose },
+        ]);
+      } else {
+        Alert.alert("Error", result.message || "Payment verification failed");
+      }
+    } catch (error) {
+      console.error("Payment verification error:", error);
+      Alert.alert(
+        "Error",
+        "Failed to verify payment. Please try again or contact support."
+      );
+    } finally {
+      setIsConfirming(false);
+    }
+  };
 
   const getTransactionIcon = () => {
     switch (transaction.type) {
-      case "DEPOSIT":
+      case WalletTransactionType.DEPOSIT:
         return <ArrowDownLeft size={24} color="#10B981" strokeWidth={2} />;
-      case "WITHDRAWAL":
+      case WalletTransactionType.WITHDRAWAL:
         return <ArrowUpRight size={24} color="#EF4444" strokeWidth={2} />;
-      case "ESCROW_FUNDING":
+      case WalletTransactionType.ESCROW_FUNDING:
         return <ArrowUpRight size={24} color="#3B82F6" strokeWidth={2} />;
-      case "ESCROW_RELEASE":
+      case WalletTransactionType.ESCROW_RELEASE:
         return <ArrowDown size={24} color="#10B981" strokeWidth={2} />;
-      case "ESCROW_REFUND":
+      case WalletTransactionType.ESCROW_REFUND:
         return <ArrowDown size={24} color="#F59E0B" strokeWidth={2} />;
-      case "FEE_PAYMENT":
+      case WalletTransactionType.FEE_PAYMENT:
         return <ArrowUp size={24} color="#EF4444" strokeWidth={2} />;
-      case "BONUS":
+      case WalletTransactionType.BONUS:
         return <Plus size={24} color="#10B981" strokeWidth={2} />;
       default:
         return <ArrowUpRight size={24} color="#6366F1" strokeWidth={2} />;
@@ -59,13 +164,13 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
 
   const getStatusIcon = () => {
     switch (transaction.status) {
-      case "COMPLETED":
+      case WalletTransactionStatus.COMPLETED:
         return <CheckCircle size={20} color="#10B981" strokeWidth={2} />;
-      case "PENDING":
+      case WalletTransactionStatus.PENDING:
         return <Clock size={20} color="#F59E0B" strokeWidth={2} />;
-      case "FAILED":
+      case WalletTransactionStatus.FAILED:
         return <XCircle size={20} color="#EF4444" strokeWidth={2} />;
-      case "REVERSED":
+      case WalletTransactionStatus.REVERSED:
         return <XCircle size={20} color="#6B7280" strokeWidth={2} />;
       default:
         return <Clock size={20} color="#6B7280" strokeWidth={2} />;
@@ -74,13 +179,13 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
 
   const getStatusColor = () => {
     switch (transaction.status) {
-      case "COMPLETED":
+      case WalletTransactionStatus.COMPLETED:
         return "#D1FAE5";
-      case "PENDING":
+      case WalletTransactionStatus.PENDING:
         return "#FEF3C7";
-      case "FAILED":
+      case WalletTransactionStatus.FAILED:
         return "#FEE2E2";
-      case "REVERSED":
+      case WalletTransactionStatus.REVERSED:
         return "#F3F4F6";
       default:
         return "#F3F4F6";
@@ -89,13 +194,13 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
 
   const getStatusTextColor = () => {
     switch (transaction.status) {
-      case "COMPLETED":
+      case WalletTransactionStatus.COMPLETED:
         return "#065F46";
-      case "PENDING":
+      case WalletTransactionStatus.PENDING:
         return "#92400E";
-      case "FAILED":
+      case WalletTransactionStatus.FAILED:
         return "#991B1B";
-      case "REVERSED":
+      case WalletTransactionStatus.REVERSED:
         return "#374151";
       default:
         return "#374151";
@@ -104,17 +209,17 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
 
   const getAmountPrefix = () => {
     switch (transaction.type) {
-      case "DEPOSIT":
-      case "ESCROW_RELEASE":
-      case "ESCROW_REFUND":
-      case "BONUS":
+      case WalletTransactionType.DEPOSIT:
+      case WalletTransactionType.ESCROW_RELEASE:
+      case WalletTransactionType.ESCROW_REFUND:
+      case WalletTransactionType.BONUS:
         return "+";
-      case "WITHDRAWAL":
-      case "ESCROW_FUNDING":
-      case "FEE_PAYMENT":
+      case WalletTransactionType.WITHDRAWAL:
+      case WalletTransactionType.ESCROW_FUNDING:
+      case WalletTransactionType.FEE_PAYMENT:
         return "-";
       default:
-        return transaction.type === "DEPOSIT" ? "+" : "-";
+        return transaction.type === WalletTransactionType.DEPOSIT ? "+" : "-";
     }
   };
 
@@ -125,19 +230,19 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
 
   const getTransactionTypeName = () => {
     switch (transaction.type) {
-      case "DEPOSIT":
+      case WalletTransactionType.DEPOSIT:
         return "Deposit";
-      case "WITHDRAWAL":
+      case WalletTransactionType.WITHDRAWAL:
         return "Withdrawal";
-      case "ESCROW_FUNDING":
+      case WalletTransactionType.ESCROW_FUNDING:
         return "Escrow Funding";
-      case "ESCROW_RELEASE":
+      case WalletTransactionType.ESCROW_RELEASE:
         return "Escrow Release";
-      case "ESCROW_REFUND":
+      case WalletTransactionType.ESCROW_REFUND:
         return "Escrow Refund";
-      case "FEE_PAYMENT":
+      case WalletTransactionType.FEE_PAYMENT:
         return "Fee Payment";
-      case "BONUS":
+      case WalletTransactionType.BONUS:
         return "Bonus";
       default:
         return "Transaction";
@@ -158,6 +263,13 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const shouldShowConfirmButton = () => {
+    return (
+      transaction.status === WalletTransactionStatus.PENDING &&
+      transaction.type !== WalletTransactionType.WITHDRAWAL
+    );
   };
 
   return (
@@ -210,6 +322,29 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
             </View>
           </View>
 
+          {/* Confirm Payment Button */}
+          {shouldShowConfirmButton() && (
+            <View style={styles.confirmButtonSection}>
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  isConfirming && styles.confirmButtonDisabled,
+                ]}
+                onPress={handleConfirmPayment}
+                disabled={isConfirming}
+              >
+                {isConfirming ? (
+                  <View style={styles.buttonContent}>
+                    <Loader2 size={16} color="#FFFFFF" />
+                    <Text style={styles.confirmButtonText}>Confirming...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.confirmButtonText}>Confirm Payment</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Details */}
           <View style={styles.detailsSection}>
             <DetailRow
@@ -235,32 +370,8 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
             <DetailRow label="Currency" value={transaction.currency} />
 
             <DetailRow
-              label="Balance Before"
-              value={`₦${
-                transaction.balanceBefore?.toLocaleString("en-NG", {
-                  minimumFractionDigits: 2,
-                }) || "0.00"
-              }`}
-            />
-
-            <DetailRow
-              label="Balance After"
-              value={`₦${
-                transaction.balanceAfter?.toLocaleString("en-NG", {
-                  minimumFractionDigits: 2,
-                }) || "0.00"
-              }`}
-            />
-
-            <DetailRow
               label="Date Created"
               value={formatDate(transaction.createdAt)}
-            />
-
-            <DetailRow
-              label="Last Updated"
-              value={formatDate(transaction.updatedAt)}
-              isLast
             />
           </View>
         </ScrollView>
@@ -344,7 +455,7 @@ const styles = StyleSheet.create({
   },
   statusSection: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 24,
   },
   statusBadge: {
     flexDirection: "row",
@@ -358,6 +469,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  confirmButtonSection: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  confirmButton: {
+    backgroundColor: "#3B82F6",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 160,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  confirmButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   detailsSection: {
     backgroundColor: "#F9FAFB",
     borderRadius: 16,
@@ -365,9 +502,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    flexDirection: "column",
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
@@ -379,19 +514,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
     fontWeight: "500",
-    flex: 1,
+    marginBottom: 4,
   },
   detailValueContainer: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 2,
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
   },
   detailValue: {
     fontSize: 14,
     color: "#111827",
     fontWeight: "600",
-    textAlign: "right",
     flex: 1,
   },
   copyButton: {

@@ -76,10 +76,9 @@ export function useNavigationGuard() {
     isReady,
   ]);
 
-  // Reset navigation state when auth state changes
-  useEffect(() => {
-    setHasNavigated(false);
-  }, [isAuthenticated, isOnboarded]);
+  // useEffect(() => {
+  //   setHasNavigated(false);
+  // }, [isAuthenticated, isOnboarded]);
 
   return {
     isReady: isReady && hasNavigated,

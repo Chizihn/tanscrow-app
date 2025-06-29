@@ -6,17 +6,28 @@ import toastConfig from "@/components/ToastConfig";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 import { tokenStorage } from "@/services/TokenStorage";
 import { useQuery } from "@apollo/client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
+import { useEffect } from "react";
 
 function AppContent() {
   const router = useRouter();
   const { isReady } = useNavigationGuard();
   const { setUser, logout } = useAuthStore();
 
+  useEffect(() => {
+    const handleActions = async () => {
+      await AsyncStorage.removeItem("tanscrow-app");
+      logout();
+      router.replace("/auth");
+    };
+    handleActions();
+  }, [logout, router]);
+
   useQuery<{ me: User }>(ME, {
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
-    skip: !tokenStorage.getToken,
+    skip: !tokenStorage.getToken || !isReady,
     onCompleted: (data) => {
       if (data.me) {
         setUser(data.me);
